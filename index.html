@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediNest Pharmacy | Care Beyond Medicines</title>
+    <meta name="description" content="A premium pharmacy management system for storing patient medicine history, prescriptions, bills, loyalty points, and refill reminders.">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = 'manifest.json';
+            document.head.appendChild(link);
+        }
+    </script>
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- Include jsPDF client-side script for combining images into A4 PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Include Supabase JS SDK Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <!-- Login Screen Card -->
+    <div class="login-wrapper" id="loginScreen" style="display: none; align-items: center; justify-content: center; min-height: 100vh; width: 100vw; background: var(--bg-app); padding: 20px; position: fixed; top: 0; left: 0; z-index: 9999;">
+        <div class="card-panel" style="max-width: 400px; width: 100%; padding: 32px; gap: 24px; box-shadow: var(--shadow-xl); border-radius: var(--radius-lg);">
+            <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div class="logo-icon" style="background-color: var(--primary); color: white; width: 56px; height: 56px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 28px; height: 28px;">
+                        <path d="M9 2a1 1 0 0 1 1 1v5h5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-5v5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-5H1a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h5V3a1 1 0 0 1 1-1h2z" transform="translate(4,2)" />
+                    </svg>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-top: 12px;" id="loginAppTitle">MediNest Pharmacy</h2>
+                <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;" id="loginAppTagline">Care Beyond Medicines</p>
+            </div>
+            
+            <!-- LOGIN FORM -->
+            <form id="loginForm" style="display: flex; flex-direction: column; gap: 16px;" autocomplete="off">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" class="form-control" id="loginUsername" placeholder="Enter username" required autocomplete="off">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" class="form-control" id="loginPassword" placeholder="Enter password" required autocomplete="new-password">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="loginRole">Select Role</label>
+                    <select class="form-control" id="loginRole" required>
+                        <option value="Admin">Admin</option>
+                        <option value="Pharmacist">Pharmacist</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                    <a href="#" id="forgotPasswordLink" style="color: var(--primary); text-decoration: none; font-weight: 600;">Forgot Password?</a>
+                    <a href="#" id="showRegisterLink" style="color: var(--primary); text-decoration: none; font-weight: 600;">Register Account</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Sign In</button>
+            </form>
+            <div id="loginErrorMessage" style="margin-top: 16px; font-size: 0.85rem; font-weight: 600; text-align: center; display: none;"></div>
+
+
+            <!-- REGISTRATION FORM -->
+            <form id="registerForm" style="display: none; flex-direction: column; gap: 16px;" autocomplete="off">
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary); text-align: center;">Register Staff Account</h3>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="registerName">Full Name</label>
+                    <input type="text" class="form-control" id="registerName" placeholder="Enter full name" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="registerMobile">Mobile Number</label>
+                    <input type="tel" class="form-control" id="registerMobile" placeholder="Enter 10-digit mobile number" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" class="form-control" id="registerUsername" placeholder="Choose username" required autocomplete="off">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" class="form-control" id="registerPassword" placeholder="Enter password" required autocomplete="new-password">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="registerRole">Select Role</label>
+                    <select class="form-control" id="registerRole" required>
+                        <option value="Pharmacist">Pharmacist</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: center; font-size: 0.75rem;">
+                    <a href="#" id="backToLoginFromRegister" style="color: var(--primary); text-decoration: none; font-weight: 600;">Already have an account? Sign In</a>
+                </div>
+                <button type="submit" id="registerSubmitBtn" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Register</button>
+            </form>
+
+            <!-- FORGOT PASSWORD FORM -->
+            <form id="forgotPasswordForm" style="display: none; flex-direction: column; gap: 16px;" autocomplete="off">
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary); text-align: center;">Recover Password</h3>
+                <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-bottom: 8px;">Enter username and role to retrieve your password.</p>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="forgotUsername">Username</label>
+                    <input type="text" class="form-control" id="forgotUsername" placeholder="Enter username" required autocomplete="off">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="forgotRole">Role</label>
+                    <select class="form-control" id="forgotRole" required>
+                        <option value="Admin">Admin</option>
+                        <option value="Pharmacist">Pharmacist</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: center; font-size: 0.75rem;">
+                    <a href="#" id="backToLoginFromForgot" style="color: var(--primary); text-decoration: none; font-weight: 600;">Back to Sign In</a>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Retrieve Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Header Bar -->
+    <header class="mobile-header">
+        <div class="logo-container" style="border-bottom: none; margin-bottom: 0; padding: 0;">
+            <div class="logo-icon" style="width: 36px; height: 36px; background-color: var(--primary); color: white;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                    <path d="M9 2a1 1 0 0 1 1 1v5h5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-5v5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-5H1a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h5V3a1 1 0 0 1 1-1h2z" transform="translate(4,2)" />
+                </svg>
+            </div>
+            <div class="logo-text">
+                <h1 style="font-size: 1.05rem;">MediNest Pharmacy</h1>
+            </div>
+        </div>
+        <button class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Toggle Navigation Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+        </button>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebarMenu">
+        <div class="logo-container">
+            <div class="logo-icon" style="background-color: var(--primary); color: white;">
+                <!-- Pharmacy Cross Logo SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 22px; height: 22px;">
+                    <path d="M9 2a1 1 0 0 1 1 1v5h5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-5v5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-5H1a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h5V3a1 1 0 0 1 1-1h2z" transform="translate(4,2)" />
+                </svg>
+            </div>
+            <div class="logo-text">
+                <h1 style="font-size: 1.15rem; letter-spacing: -0.3px;">MediNest</h1>
+                <p style="font-size: 0.65rem; color: var(--primary); font-weight: 700; margin-top: 1px; letter-spacing: 0.5px;">Pharmacy</p>
+            </div>
+        </div>
+
+        <nav class="nav-links">
+            <div class="nav-item">
+                <button class="nav-link active" data-target="dashboardModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+                    <span>Dashboard</span>
+                </button>
+            </div>
+            <div class="nav-item">
+                <button class="nav-link" data-target="customersModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>Customers</span>
+                </button>
+            </div>
+            <div class="nav-item">
+                <button class="nav-link" data-target="prescriptionsModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Prescriptions</span>
+                </button>
+            </div>
+            <div class="nav-item">
+                <button class="nav-link" data-target="purchasesModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span>Sales & Purchases</span>
+                </button>
+            </div>
+            <div class="nav-item">
+                <button class="nav-link" data-target="remindersModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span>Refill Reminders</span>
+                </button>
+            </div>
+            <div class="nav-item">
+                <button class="nav-link" data-target="reportsModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    <span>Reports</span>
+                </button>
+            </div>
+            <div class="nav-item" id="navItemMonitoring" style="display: none;">
+                <button class="nav-link" data-target="monitoringModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <span>User Monitoring</span>
+                </button>
+            </div>
+            <div class="nav-item">
+                <button class="nav-link" data-target="settingsModule">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <span>Settings & Backup</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="role-badge" style="flex-direction: column; align-items: start; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="role-dot" id="roleIndicatorDot"></span>
+                    <span>Role: <strong id="activeRoleText">Pharmacist</strong></span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-left: 16px;" id="sidebarUserText">User: N/A</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="sidebarLogoutBtn" style="width: 100%; margin-top: 8px;">Logout</button>
+        </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <main class="main-wrapper">
+        <!-- Top Toolbar Header -->
+        <header class="top-bar">
+            <div class="search-box-wrapper">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" class="global-search-input" id="globalPatientSearch" placeholder="Type Mobile Number or Name to quick-find patient..." autocomplete="off">
+                <!-- Autocomplete Dropdown -->
+                <div class="search-results-overlay" id="globalSearchResults"></div>
+            </div>
+            
+            <div class="user-profile-widget">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);" id="loggedInUserDisplay">Admin (admin)</span>
+                <button class="role-toggle-btn" id="viewRecoveryReportBtn" title="Data Recovery Report">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>Recovery Report</span>
+                </button>
+                <button class="role-toggle-btn" id="changePasswordBtn" title="Change Password">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Password</span>
+                </button>
+                <button class="role-toggle-btn" id="logoutBtn" title="Sign Out of Session">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Logout</span>
+                </button>
+                
+                <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic SPA Modules Container -->
+
+        <!-- 1. DASHBOARD MODULE -->
+        <section class="app-module active" id="dashboardModule">
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h2 id="dashboardGreeting">Good Afternoon, Rx Pharmacist</h2>
+                    <p>Track your customer histories, prescriptions, refills and purchases effortlessly. Today is <strong id="currentDateString">June 1, 2026</strong>.</p>
+                </div>
+                <div class="logo-icon" style="background-color: rgba(255,255,255,0.2); color: white; width: 64px; height: 64px; box-shadow: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 32px; height: 32px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Dashboard Prominent Search Panel -->
+            <div class="card-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 8px; position: relative;">
+                <label for="dashboardPatientSearch" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 18px; height: 18px; color: var(--primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    Quick Customer Lookup Search
+                </label>
+                <div style="position: relative; width: 100%;">
+                    <input type="text" class="form-control" id="dashboardPatientSearch" placeholder="Type customer name or mobile number to instant find patient file..." style="padding-left: 44px; height: 48px; font-size: 0.95rem; margin-bottom: 0;" autocomplete="off">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <!-- Autocomplete Dropdown overlay -->
+                <div class="search-results-overlay" id="dashboardSearchResults" style="margin-top: 6px; top: 100%;"></div>
+            </div>
+
+            <!-- Stats grid Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" id="cardCustomersNav">
+                    <div class="stat-icon emerald">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statTotalCustomers">0</h3>
+                        <p>Total Customers</p>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="cardSalesNav">
+                    <div class="stat-icon blue">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statSalesToday">0</h3>
+                        <p>Today's Sales Count</p>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="cardLoyaltyNav">
+                    <div class="stat-icon orange">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statTotalLoyaltyPoints">0</h3>
+                        <p>Loyalty Points Issued</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Double-sided Splits -->
+            <div class="dashboard-split">
+                <!-- Left panel: Recent Patients -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            <span>Recent Customers Added</span>
+                        </div>
+                        <button class="panel-action-btn" id="dashViewCustomersBtn">View All Customers</button>
+                    </div>
+                    <div class="list-wrapper" id="dashRecentCustomersList">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Right panel: Reminders -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                            <span>Upcoming Refill Reminders</span>
+                        </div>
+                        <button class="panel-action-btn" id="dashCreateReminderBtn">Create Reminder</button>
+                    </div>
+                    <div class="list-wrapper" id="dashUpcomingRemindersList">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Leaderboard Split -->
+            <div class="card-panel" style="margin-top: 32px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--warning);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                        <span>Top Loyalty Leaderboard (Platinum & Gold Members)</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table" style="min-width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Name</th>
+                                <th>Mobile Number</th>
+                                <th>Tier Rank</th>
+                                <th>Loyalty Points</th>
+                                <th>Total Purchases</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashLeaderboardTableBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. CUSTOMER MODULE -->
+        <section class="app-module" id="customersModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>Customer Records Database</h2>
+                    <p>Access permanent patient details, histories, and loyalty logs.</p>
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" id="openAddCustomerModalBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Add Customer</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customer Directory Search and Filter Panel -->
+            <div class="card-panel" style="padding: 16px;">
+                <div style="display: flex; gap: 12px; align-items: center; width: 100%;">
+                    <div style="position: relative; flex-grow: 1;">
+                        <input type="text" class="form-control" id="customerSearchInput" placeholder="Filter customer database by name or mobile number..." style="padding-left: 40px; margin-bottom: 0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers database list table -->
+            <div class="card-panel">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile Number</th>
+                                <th>Age/Gender</th>
+                                <th>Family ID</th>
+                                <th>Points Balance</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTableBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. CUSTOMER PROFILE PAGE (DYNAMIC DETAILED PROFILE) -->
+        <section class="app-module" id="customerProfileModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <button class="btn btn-secondary btn-sm" id="profileGoBackBtn" style="margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 14px; height: 14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        <span>Back to Database</span>
+                    </button>
+                    <h2 id="profileHeaderName">John Doe</h2>
+                    <p>Complete Unified Patient Profile Timeline</p>
+                </div>
+                <div class="module-actions" style="align-items: flex-end;">
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary btn-sm" id="profileAddPurchaseBtn">Record Sales Purchase</button>
+                        <button class="btn btn-primary btn-sm" id="profileUploadRxBtn">Upload Prescription</button>
+                        <button class="btn btn-primary btn-sm" id="profileAddReminderBtn">Schedule Refill</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Content grid -->
+            <div class="profile-grid">
+                <!-- Left Sticky Customer details -->
+                <div class="profile-card">
+                    <div class="profile-avatar" id="profileCardAvatar">JD</div>
+                    <h3 class="profile-name" id="profileCardName">John Doe</h3>
+                    <div class="profile-phone" id="profileCardPhone">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        <span id="profileCardPhoneText">9876543210</span>
+                    </div>
+
+                    <!-- Mini Points Balance -->
+                    <div class="profile-stats-mini">
+                        <div class="profile-stat-mini-item">
+                            <h5 id="profilePointsBalance">0</h5>
+                            <p>Points Current</p>
+                        </div>
+                        <div class="profile-stat-mini-item" style="border-left: 1px solid var(--border-color);">
+                            <h5 id="profilePointsSpent">₹0</h5>
+                            <p>Total Spend</p>
+                        </div>
+                    </div>
+
+                    <!-- Demographic rows -->
+                    <div class="profile-details-list">
+                        <div class="profile-details-row">
+                            <span class="profile-details-label">Age / Gender:</span>
+                            <span class="profile-details-value" id="profileCardDemographics">45 Yrs / Male</span>
+                        </div>
+                        <div class="profile-details-row">
+                            <span class="profile-details-label">Family ID:</span>
+                            <span class="profile-details-value" id="profileCardFamilyId">N/A</span>
+                        </div>
+                        <div class="profile-details-row">
+                            <span class="profile-details-label">Last Purchase:</span>
+                            <span class="profile-details-value" id="profileCardLastVisit">June 1, 2026</span>
+                        </div>
+                        <div class="profile-details-row" style="flex-direction: column; gap: 6px;">
+                            <span class="profile-details-label">Permanent Address:</span>
+                            <span class="profile-details-value" id="profileCardAddress" style="font-weight: 500; color: var(--text-muted); line-height: 1.4;">Green Street Sector 10</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary btn-sm" id="profileEditCustomerBtn" style="margin-top: 24px; width: 100%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        <span>Edit Personal Details</span>
+                    </button>
+                </div>
+
+                <!-- Right dynamic content modules tabs -->
+                <div class="card-panel">
+                    <!-- Key Customer Metrics Summary Grid -->
+                    <div class="profile-metrics-highlight-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px; width: 100%;">
+                        <!-- Total Purchases Card -->
+                        <div style="background-color: var(--slate-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Purchases</span>
+                            <h4 style="font-size: 1.35rem; font-weight: 800; color: var(--primary);" id="profileTotalPurchasesText">0 bills</h4>
+                        </div>
+                        <!-- Total Amount Spent Card -->
+                        <div style="background-color: var(--slate-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Amount Spent</span>
+                            <h4 style="font-size: 1.35rem; font-weight: 800; color: var(--primary);" id="profileTotalSpentText">₹0</h4>
+                        </div>
+                        <!-- Loyalty Points Card -->
+                        <div style="background-color: var(--slate-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 4px; cursor: pointer;" id="profileLoyaltyPointsMetricCard" title="Click to Redeem Points">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Loyalty Points</span>
+                            <h4 style="font-size: 1.35rem; font-weight: 800; color: var(--warning);" id="profileLoyaltyPointsText">0 points</h4>
+                        </div>
+                        <!-- Last Purchase Date Card -->
+                        <div style="background-color: var(--slate-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Last Purchase Date</span>
+                            <h4 style="font-size: 1.15rem; font-weight: 800; color: var(--info); word-break: break-all;" id="profileLastPurchaseDateText">N/A</h4>
+                        </div>
+                    </div>
+
+                    <div class="profile-tabs-header">
+                        <button class="profile-tab-btn active" data-tab="timeline">History Timeline</button>
+                        <button class="profile-tab-btn" data-tab="prescriptions">Prescription History (<span id="profileRxCount">0</span>)</button>
+                        <button class="profile-tab-btn" data-tab="purchases">Purchases (<span id="profilePurchaseCount">0</span>)</button>
+                        <button class="profile-tab-btn" data-tab="reminders">Refill Reminders (<span id="profileReminderCount">0</span>)</button>
+                    </div>
+
+                    <!-- 1. Unified Timeline Tab -->
+                    <div class="profile-tab-content active" id="profileTabTimeline">
+                        <div class="timeline-container" id="profileTimelineItems">
+                            <!-- Filled dynamically by JS -->
+                        </div>
+                    </div>
+
+                    <!-- 2. Prescriptions List Tab -->
+                    <div class="profile-tab-content" id="profileTabPrescriptions">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;" id="profileRxGallery">
+                            <!-- Prescriptions grid rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- 3. Purchases List Tab -->
+                    <div class="profile-tab-content" id="profileTabPurchases">
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bill No.</th>
+                                        <th>Date</th>
+                                        <th>Medicines</th>
+                                        <th>Amount</th>
+                                        <th>Points Earned</th>
+                                        <th>Bill Doc</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profilePurchasesTableBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 4. Reminders List Tab -->
+                    <div class="profile-tab-content" id="profileTabReminders">
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine</th>
+                                        <th>Refill Target Date</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profileRemindersTableBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. PRESCRIPTION MODULE -->
+        <section class="app-module" id="prescriptionsModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>Prescription Repository</h2>
+                    <p>Safely store and retrieve scanned digital prescription copies for patients.</p>
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" id="openUploadRxModalBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span>Upload Prescription</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Rx Lookup Search -->
+            <div class="card-panel">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;" id="rxGlobalGallery">
+                    <!-- Global prescription records list with search filters -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. PURCHASE MODULE -->
+        <section class="app-module" id="purchasesModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>Pharmacy Sales & Purchases Log</h2>
+                    <p>Enter bill amounts and log customers' patient purchases to reward loyalty points.</p>
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" id="openAddPurchaseModalBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>New Purchase Entry</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- List table panel -->
+            <div class="card-panel">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Bill No.</th>
+                                <th>Bill Date</th>
+                                <th>Customer Name</th>
+                                <th>Medicines Entered</th>
+                                <th>Amount Spent</th>
+                                <th>Points Generated</th>
+                                <th style="text-align: right;">Bill Proof</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchasesGlobalTableBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. REFILL REMINDER MODULE -->
+        <section class="app-module" id="remindersModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>Patient Refill Schedules & Reminders</h2>
+                    <p>Keep tracking when patients will run out of chronic medications to schedule calls.</p>
+                </div>
+                <div class="module-actions">
+                    <button class="btn btn-primary" id="openAddReminderModalBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Add Refill Schedule</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab list reminders -->
+            <div class="card-panel">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Mobile Number</th>
+                                <th>Medicine Name</th>
+                                <th>Refill Date</th>
+                                <th>Refill Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="remindersGlobalTableBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. REPORTS MODULE -->
+        <section class="app-module" id="reportsModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>Advanced Analytics & Patient Retention Reports</h2>
+                    <p>Overview of top customers, pharmacy trends, loyalty point distributions, and registration counts.</p>
+                </div>
+            </div>
+
+            <!-- Highlights stats counters -->
+            <div class="report-highlight-grid">
+                <div class="card-panel" style="flex-direction: row; align-items: center; gap: 20px;">
+                    <div class="stat-icon emerald" style="width: 56px; height: 56px; background-color: var(--primary-light); color: var(--primary);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1.5rem; font-weight: 800;" id="reportTotalPoints">0</h4>
+                        <p style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Total Points Accumulated</p>
+                    </div>
+                </div>
+
+                <div class="card-panel" style="flex-direction: row; align-items: center; gap: 20px;">
+                    <div class="stat-icon blue" style="width: 56px; height: 56px; background-color: var(--info-light); color: var(--info);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1.5rem; font-weight: 800;" id="reportAverageSpend">₹0.00</h4>
+                        <p style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Avg. Spend Per Purchase</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Double split charts -->
+            <div class="reports-layout">
+                <!-- Top Spenders Bar Chart panel -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Top Customer Spenders (₹)</div>
+                    </div>
+                    <div class="chart-bar-container" id="reportTopSpendersChart">
+                        <!-- Custom CSS render bars -->
+                    </div>
+                </div>
+
+                <!-- Most Frequent Purchase Visit Bar Chart panel -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Most Frequent Purchasing Customers (Visits)</div>
+                    </div>
+                    <div class="chart-bar-container" id="reportTopFrequentChart">
+                        <!-- Custom CSS render bars -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="reports-layout">
+                <!-- Monthly customer registrations chart panel -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Monthly Registered Customers Profile Growth</div>
+                    </div>
+                    <div class="chart-bar-container" id="reportMonthlyRegistrationsChart">
+                        <!-- Custom CSS render bars -->
+                    </div>
+                </div>
+
+                <!-- Top Point Holders -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Loyalty Points Distribution Leaderboard</div>
+                    </div>
+                    <div class="chart-bar-container" id="reportTopPointsChart">
+                        <!-- Custom CSS render bars -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. SETTINGS & DATA PORTABILITY MODULE -->
+        <section class="app-module" id="settingsModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>MediNest Pharmacy System Settings</h2>
+                    <p>Adjust pharmacy profiles, control user permissions, import database archives, and securely reset cache.</p>
+                </div>
+            </div>
+
+            <!-- Branding & Loyalty Settings card (Admin Only) -->
+            <div class="card-panel" id="brandingLoyaltySettingsCard">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:22px;height:22px;color:var(--primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
+                        <span>Branding & Loyalty Rules Settings</span>
+                    </div>
+                </div>
+                <form id="brandingSettingsForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="setStoreName">Pharmacy Name</label>
+                            <input type="text" class="form-control" id="setStoreName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="setTagline">System Tagline</label>
+                            <input type="text" class="form-control" id="setTagline" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="setRupeesPerPoint">Loyalty Rule (Rupees per 1 loyalty point)</label>
+                            <input type="number" class="form-control" id="setRupeesPerPoint" min="10" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="setStoreMobile">Pharmacy Mobile Number</label>
+                            <input type="tel" class="form-control" id="setStoreMobile" placeholder="e.g. 9876543210">
+                        </div>
+                        <div class="form-group">
+                            <label for="setStoreWhatsApp">Pharmacy WhatsApp Number</label>
+                            <input type="tel" class="form-control" id="setStoreWhatsApp" placeholder="e.g. 9876543210">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="setStoreAddress">Pharmacy Address</label>
+                        <textarea class="form-control" id="setStoreAddress" rows="2" placeholder="Enter pharmacy street address..." style="resize: none;"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="setLogoFile">Pharmacy Logo Upload</label>
+                            <input type="file" id="setLogoFile" accept="image/*" class="form-control">
+                            <div style="margin-top: 6px;"><img id="logoPreview" src="" alt="Logo Preview" style="max-height: 48px; display: none; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="setBannerFile">Pharmacy Welcome Banner Background</label>
+                            <input type="file" id="setBannerFile" accept="image/*" class="form-control">
+                            <div style="margin-top: 6px;"><img id="bannerPreview" src="" alt="Banner Preview" style="max-height: 48px; display: none; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"></div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Branding & Rules</button>
+                </form>
+            </div>
+
+            <!-- User Management Card (Admin Only) -->
+            <div class="card-panel" id="userManagementSettingsCard">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:22px;height:22px;color:var(--primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <span>Pharmacist User Management</span>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px;">
+                    <!-- User list table -->
+                    <div>
+                        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px;">Active Staff Directory</h4>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersSettingsTableBody">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Create new User account form -->
+                    <div style="border-left: 1px solid var(--border-color); padding-left: 24px;">
+                        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px;">Add Staff Account</h4>
+                        <form id="createPharmacistForm" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="newUserName">Staff Name</label>
+                                <input type="text" class="form-control" id="newUserName" placeholder="Full name" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="newUserMobile">Mobile Number</label>
+                                <input type="tel" class="form-control" id="newUserMobile" placeholder="10-digit mobile number" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="newUserUsername">Username</label>
+                                <input type="text" class="form-control" id="newUserUsername" placeholder="Enter username" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="newUserPassword">Password</label>
+                                <input type="password" class="form-control" id="newUserPassword" placeholder="Enter password" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="newUserRole">Select Role</label>
+                                <select class="form-control" id="newUserRole" required>
+                                    <option value="Pharmacist" selected>Pharmacist</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%;">Create Account</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup & Portability card -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                        <span>Database Portability & JSON Backups</span>
+                    </div>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">To guarantee absolute data persistence under browser storage, keep a copy of your patient databases. You can download the complete encrypted data as a JSON file and restore it in any modern browser.</p>
+                
+                <div style="display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" id="settingsExportDbBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>Download Full Database Backup</span>
+                    </button>
+                    
+                    <button class="btn btn-secondary" id="settingsImportTriggerBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span>Upload & Restore from Backup (.json)</span>
+                    </button>
+                    <input type="file" id="settingsImportFileSelector" accept=".json" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Danger Zone panel reset -->
+            <div class="card-panel" style="border-color: var(--danger-light); background-color: var(--bg-card);">
+                <div class="panel-header" style="border-bottom-color: var(--slate-200);">
+                    <div class="panel-title" style="color: var(--danger);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--danger);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <span>System Danger Zone</span>
+                    </div>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">Clicking below will clear the active browser's local state storage completely. All patients, prescription photos, and loyalty metrics will be deleted. Ensure you have backed up your database first.</p>
+                
+                <div style="margin-top: 12px;">
+                    <button class="btn btn-danger" id="settingsClearDbBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        <span>Completely Wipe Local Storage Data</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. ADMIN MONITORING & USER MANAGEMENT MODULE -->
+        <section class="app-module" id="monitoringModule">
+            <div class="module-header">
+                <div class="module-header-title">
+                    <h2>Admin Monitoring & User Management</h2>
+                    <p>Track user login sessions, monitor CRUD actions, enable/disable accounts, and inspect activity logs.</p>
+                </div>
+            </div>
+
+            <!-- User Analytics Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon emerald">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="monitorTotalUsers">0</h3>
+                        <p>Total Registered Users</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="monitorTotalAdmins">0</h3>
+                        <p>Admin Accounts</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 9.172V5L8 4z" /></svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="monitorTotalPharmacists">0</h3>
+                        <p>Pharmacist Accounts</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Control Center Panel -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:22px;height:22px;color:var(--primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <span>User Account Management</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Name / Username</th>
+                                <th>Mobile</th>
+                                <th>Role</th>
+                                <th>Reg Date</th>
+                                <th>Last Login</th>
+                                <th>Logins</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monitorUsersTableBody">
+                            <!-- Rendered dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- User Activity Log Section -->
+            <div class="card-panel">
+                <div class="panel-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div class="panel-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:22px;height:22px;color:var(--primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                        <span>User Activity & Operations Log</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; max-width: 320px; width: 100%;">
+                        <input type="text" class="form-control" id="monitorLogSearchInput" placeholder="Filter by User or Action..." style="padding: 8px 12px; font-size: 0.85rem;">
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>User Name</th>
+                                <th>Role</th>
+                                <th>Action Performed</th>
+                                <th>Date & Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monitorActivityLogTableBody">
+                            <!-- Rendered dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL OVERLAYS -->
+
+    <!-- A. ADD/EDIT CUSTOMER MODAL -->
+    <div class="modal-overlay" id="customerFormModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="customerModalTitle">Add New Customer Profile</h3>
+                <button class="modal-close" data-close="customerFormModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="customerForm">
+                <input type="hidden" id="customerFormIndex">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="custName">Customer Name <span class="required">*</span></label>
+                        <input type="text" class="form-control" id="custName" placeholder="Enter patient's full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="custMobile">Mobile Number (Unique Identifier) <span class="required">*</span></label>
+                        <input type="tel" class="form-control" id="custMobile" placeholder="e.g. 9876543210 (10 digits)" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="custAge">Age (Years) <span class="required">*</span></label>
+                            <input type="number" class="form-control" id="custAge" min="0" max="150" placeholder="e.g. 36" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="custGender">Gender <span class="required">*</span></label>
+                            <select class="form-control" id="custGender" required>
+                                <option value="" disabled selected>Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="custFamilyId">Family ID (Group code / Optional)</label>
+                            <input type="text" class="form-control" id="custFamilyId" placeholder="e.g. FAM-8041">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="custAddress">Permanent Residential Address <span class="required">*</span></label>
+                        <textarea class="form-control" id="custAddress" rows="3" placeholder="Enter complete address..." required style="resize: none;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="customerFormModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Patient Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- B. UPLOAD PRESCRIPTION MODAL -->
+    <div class="modal-overlay" id="prescriptionFormModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload Digital Prescription Copy</h3>
+                <button class="modal-close" data-close="prescriptionFormModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="prescriptionForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="rxCustomerSearch">Assign to Patient Customer <span class="required">*</span></label>
+                        <select class="form-control" id="rxCustomerSearch" required>
+                            <!-- List of patients dynamically populated -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="rxDate">Prescription Date <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="rxDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="rxDoctor">Doctor Name <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="rxDoctor" placeholder="e.g. Dr. A. K. Roy" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Upload Prescription Images (Min 1, Max 15 scans) <span class="required">*</span></label>
+                        <div class="image-upload-zone" id="rxUploadZone">
+                            <div class="upload-icon" id="rxUploadPromptIcon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div id="rxUploadPromptText">
+                                <p style="font-size: 0.9rem; font-weight: 600;">Drag prescription images here or click to browse</p>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Supports PNG, JPG, JPEG (Compressed automatically to conserve IndexedDB space)</p>
+                            </div>
+                            <div class="thumbnail-preview-container" id="rxImagePreviewContainer"></div>
+                            <input type="file" id="rxImageFile" accept="image/*" style="display: none;" multiple required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rxNotes">Important Notes & Dosage Guidelines</label>
+                        <textarea class="form-control" id="rxNotes" rows="2" placeholder="Add specific pharmacist annotations or special medication instructions..." style="resize: none;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="prescriptionFormModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save & Record Rx</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- C. ADD PURCHASE ENTRY MODAL -->
+    <div class="modal-overlay" id="purchaseFormModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Patient Purchase & Sales Entry</h3>
+                <button class="modal-close" data-close="purchaseFormModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="purchaseForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="purCustomerSearch">Customer Account <span class="required">*</span></label>
+                        <select class="form-control" id="purCustomerSearch" required>
+                            <!-- List of patients dynamically populated -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="purBillNumber">Bill / Invoice Number <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="purBillNumber" placeholder="e.g. INVOICE-4029" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="purBillDate">Bill Date <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="purBillDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="purMedicines">Medicine Names & Quantity Description <span class="required">*</span></label>
+                        <textarea class="form-control" id="purMedicines" rows="2" placeholder="e.g. Paracetamol 650mg x20, Amoxicillin 500mg x10" required style="resize: none;"></textarea>
+                    </div>
+
+                    <div class="form-row" style="align-items: end;">
+                        <div class="form-group">
+                            <label for="purQuantity">Total Item Quantity <span class="required">*</span></label>
+                            <input type="number" class="form-control" id="purQuantity" min="1" placeholder="Total qty" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="purBillAmount">Total Invoice Amount (₹) <span class="required">*</span></label>
+                            <input type="number" class="form-control" id="purBillAmount" min="1" step="any" placeholder="Enter total bill amount" required>
+                        </div>
+                        <div class="form-group" style="padding-bottom: 4px; grid-column: 1 / -1; margin-top: 4px;">
+                            <div style="background-color: var(--primary-light); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">Points to earn:</span>
+                                <strong style="font-size: 0.95rem; color: var(--primary);" id="purPointsPreview">0 pts</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Upload Bill Copy (Optional Photo Proof)</label>
+                        <div class="image-upload-zone" id="purUploadZone">
+                            <div class="upload-icon" id="purUploadPromptIcon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div id="purUploadPromptText">
+                                <p style="font-size: 0.9rem; font-weight: 600;">Drag bill image here or click to browse</p>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">PNG, JPG, JPEG (Max 1MB, compressed automatically)</p>
+                            </div>
+                            <img src="" class="upload-preview" id="purImagePreview" alt="Bill preview">
+                            <input type="file" id="purImageFile" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="purchaseFormModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Process & Record Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- D. SCHEDULE REFILL REMINDER MODAL -->
+    <div class="modal-overlay" id="reminderFormModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule Patient Refill Reminder</h3>
+                <button class="modal-close" data-close="reminderFormModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="reminderForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="remCustomerSearch">Customer Account <span class="required">*</span></label>
+                        <select class="form-control" id="remCustomerSearch" required>
+                            <!-- List of patients dynamically populated -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="remMedicine">Medicine Name for Refill <span class="required">*</span></label>
+                        <input type="text" class="form-control" id="remMedicine" placeholder="e.g. Paracetamol 650mg, Rosuvastatin 10mg" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="remQuantity">Medicine Quantity (No. of Tablets/Packs) <span class="required">*</span></label>
+                            <input type="number" class="form-control" id="remQuantity" min="1" placeholder="e.g. 30" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="remDaysSupply">Days Supply <span class="required">*</span></label>
+                            <input type="number" class="form-control" id="remDaysSupply" min="1" placeholder="e.g. 30" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="remExpectedDate">Expected Refill Date (Expiry)</label>
+                            <input type="date" class="form-control" id="remExpectedDate" readonly style="background-color: var(--slate-100); cursor: not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label for="remDate">Reminder Target Date (3 days early) <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="remDate" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="reminderFormModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Refill Reminder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- E. FULL SCREEN DIGITAL VIEW OF PRESCRIPTION MODAL -->
+    <div class="modal-overlay" id="viewPrescriptionModal">
+        <div class="modal-card" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="viewRxModalTitle">Prescription Record View</h3>
+                <button class="modal-close" data-close="viewPrescriptionModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px; align-items: center; background-color: var(--slate-50);">
+                <div id="viewRxImageGallery" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%; max-height: 300px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);"></div>
+                <div style="background-color: var(--bg-card); width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);" id="viewRxMeta">Date: June 1, 2026 | Dr. Roy</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" id="viewRxDownloadPdfBtn" class="panel-action-btn" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; border: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 14px; height: 14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                Generate PDF Summary
+                            </button>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; border-top: 1px solid var(--border-color); padding-top: 12px;" id="viewRxNotes">
+                        Notes: None
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZOOM IMAGE MODAL -->
+    <div class="modal-overlay" id="zoomImageModal">
+        <div class="modal-card" style="max-width: 90vw; width: auto; background: transparent; border: none; box-shadow: none; align-items: center; justify-content: center;">
+            <div style="position: relative; display: flex; justify-content: center; align-items: center;">
+                <button class="modal-close" data-close="zoomImageModal" style="position: absolute; top: -45px; right: 0; background: rgba(255,255,255,0.85); color: black; z-index: 1010; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <img src="" id="zoomedImage" alt="Zoomed View" style="max-width: 100%; max-height: 80vh; border-radius: var(--radius-md); box-shadow: var(--shadow-xl); background: var(--bg-card); object-fit: contain;">
+            </div>
+        </div>
+    </div>
+
+    <!-- F. CUSTOM REDEEM POINTS MODAL -->
+    <div class="modal-overlay" id="redeemPointsModal">
+        <div class="modal-card" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Redeem Customer Loyalty Points</h3>
+                <button class="modal-close" data-close="redeemPointsModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="redeemPointsForm">
+                <input type="hidden" id="redeemCustomerIndex">
+                <div class="modal-body">
+                    <div style="background-color: var(--primary-light); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); text-align: center; margin-bottom: 20px;">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Available Points Balance</span>
+                        <h4 style="font-size: 2.25rem; font-weight: 800; color: var(--primary); margin-top: 4px;" id="redeemAvailablePointsText">0</h4>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="redeemPointsQty">Points to Redeem <span class="required">*</span></label>
+                        <input type="number" class="form-control" id="redeemPointsQty" min="1" placeholder="Enter points count" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="redeemNotes">Redemption Reason / Notes</label>
+                        <input type="text" class="form-control" id="redeemNotes" placeholder="e.g. Redeemed ₹100 discount on bill">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="redeemPointsModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Process Redemption</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- G. CHANGE PASSWORD MODAL -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Change Account Password</h3>
+                <button class="modal-close" data-close="changePasswordModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="changePasswordForm" autocomplete="off">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="changeCurrentPassword">Current Password <span class="required">*</span></label>
+                        <input type="password" class="form-control" id="changeCurrentPassword" placeholder="Enter current password" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="changeNewPassword">New Password <span class="required">*</span></label>
+                        <input type="password" class="form-control" id="changeNewPassword" placeholder="Enter new password" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="changeConfirmPassword">Confirm New Password <span class="required">*</span></label>
+                        <input type="password" class="form-control" id="changeConfirmPassword" placeholder="Re-enter new password" required autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="changePasswordModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- H. ADMIN RESET PASSWORD MODAL -->
+    <div class="modal-overlay" id="adminResetPasswordModal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Reset User Password</h3>
+                <button class="modal-close" data-close="adminResetPasswordModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="adminResetPasswordForm" autocomplete="off">
+                <input type="hidden" id="resetPasswordUserId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="resetPasswordUsername">User Account</label>
+                        <input type="text" class="form-control" id="resetPasswordUsername" readonly style="background-color: var(--slate-100); cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label for="resetPasswordNewValue">New Password <span class="required">*</span></label>
+                        <input type="password" class="form-control" id="resetPasswordNewValue" placeholder="Enter new password" required autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close="adminResetPasswordModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- I. RECOVERY REPORT MODAL -->
+    <div class="modal-overlay" id="recoveryReportModal">
+        <div class="modal-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">IndexedDB Emergency Data Recovery Report</h3>
+                <button class="modal-close" data-close="recoveryReportModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                    This system performed an automated inspection of all IndexedDB databases on this local origin to recover patient records. No databases were reset or created.
+                </p>
+                <div style="background-color: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-bottom: 12px;">Inspection Summary</h4>
+                    <div id="recoveryReportSummary" style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+                        Scanning IndexedDB...
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="custom-table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Database Name</th>
+                                <th>Version</th>
+                                <th>Store Name</th>
+                                <th>Record Count</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recoveryReportTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">No databases scanned yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-close="recoveryReportModal">Close Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML Toast notifications container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+    <script>
+        if ((window.location.protocol === 'http:' || window.location.protocol === 'https:') && 'serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered successfully with scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        } else {
+            console.log('Service Worker registration skipped (running from local file:// context).');
+        }
+    </script>
+</body>
+</html>
