@@ -828,14 +828,14 @@ function dbGetAll(storeName) {
             console.log(`[Supabase] dbGetAll from table: ${table}`);
             return supabaseClient.from(table).select('*').then(({ data, error }) => {
                 if (error) {
-                    console.warn(`[Supabase] dbGetAll failed for ${table}. Disabling Supabase client for session.`, error);
-                    supabaseClient = null;
+                    console.error(`[Supabase Error] dbGetAll failed for table "${table}":`, error);
+                    showToast(`Database Read Error [${table}]: ${error.message || error.details || error}`, 'danger');
                     return dbGetAllLocal(storeName);
                 }
                 return data || [];
             }).catch(err => {
-                console.warn(`[Supabase] dbGetAll error for ${table}. Disabling Supabase client for session.`, err);
-                supabaseClient = null;
+                console.error(`[Supabase Error] dbGetAll catch for table "${table}":`, err);
+                showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
                 return dbGetAllLocal(storeName);
             });
         }
@@ -850,14 +850,14 @@ function dbPut(storeName, item) {
             console.log(`[Supabase] dbPut into table ${table}:`, item);
             return supabaseClient.from(table).upsert(item).then(({ error }) => {
                 if (error) {
-                    console.warn(`[Supabase] dbPut failed for ${table}. Disabling Supabase client for session.`, error);
-                    supabaseClient = null;
+                    console.error(`[Supabase Error] dbPut failed for table "${table}":`, error);
+                    showToast(`Database Write Error [${table}]: ${error.message || error.details || error}`, 'danger');
                     return dbPutLocal(storeName, item);
                 }
                 return item;
             }).catch(err => {
-                console.warn(`[Supabase] dbPut error for ${table}. Disabling Supabase client for session.`, err);
-                supabaseClient = null;
+                console.error(`[Supabase Error] dbPut catch for table "${table}":`, err);
+                showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
                 return dbPutLocal(storeName, item);
             });
         }
@@ -872,13 +872,13 @@ function dbDelete(storeName, id) {
             console.log(`[Supabase] dbDelete ${id} from table ${table}`);
             return supabaseClient.from(table).delete().eq('id', id).then(({ error }) => {
                 if (error) {
-                    console.warn(`[Supabase] dbDelete failed for ${table}. Disabling Supabase client for session.`, error);
-                    supabaseClient = null;
+                    console.error(`[Supabase Error] dbDelete failed for table "${table}":`, error);
+                    showToast(`Database Delete Error [${table}]: ${error.message || error.details || error}`, 'danger');
                     return dbDeleteLocal(storeName, id);
                 }
             }).catch(err => {
-                console.warn(`[Supabase] dbDelete error for ${table}. Disabling Supabase client for session.`, err);
-                supabaseClient = null;
+                console.error(`[Supabase Error] dbDelete catch for table "${table}":`, err);
+                showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
                 return dbDeleteLocal(storeName, id);
             });
         }
@@ -899,8 +899,7 @@ function dbClearAll() {
             });
         });
         return Promise.all(clearPromises).catch(err => {
-            console.warn('[Supabase] dbClearAll failed. Disabling Supabase client for session.', err);
-            supabaseClient = null;
+            console.warn('[Supabase] dbClearAll failed.', err);
             return dbClearAllLocal();
         });
     }
@@ -1063,13 +1062,25 @@ function checkSessionAndLogin() {
 
 async function loadStateFromDatabase() {
     try {
-        state.customers = await dbGetAll(STORES.CUSTOMERS);
-        state.prescriptions = await dbGetAll(STORES.PRESCRIPTIONS);
-        state.purchases = await dbGetAll(STORES.PURCHASES);
-        state.reminders = await dbGetAll(STORES.REMINDERS);
+        console.log('[Supabase] Fetching database tables in parallel...');
+        const [customers, prescriptions, purchases, reminders, users, logs, settingsData] = await Promise.all([
+            dbGetAll(STORES.CUSTOMERS),
+            dbGetAll(STORES.PRESCRIPTIONS),
+            dbGetAll(STORES.PURCHASES),
+            dbGetAll(STORES.REMINDERS),
+            dbGetAll(STORES.USERS),
+            dbGetAll(STORES.LOGS),
+            dbGetAll(STORES.SETTINGS)
+        ]);
 
-        // Load users from IndexedDB
-        state.users = await dbGetAll(STORES.USERS);
+        state.customers = customers || [];
+        state.prescriptions = prescriptions || [];
+        state.purchases = purchases || [];
+        state.reminders = reminders || [];
+        state.users = users || [];
+        state.logs = logs || [];
+
+        // Setup default users if empty
         if (!state.users || state.users.length === 0) {
             const defaultUsers = [
                 { id: 'user-admin', username: 'admin', password: 'admin123', role: 'Admin', name: 'System Admin', mobile: '9999999999', createdAt: new Date().toISOString(), lastLoginAt: '', loginCount: 0, status: 'Active' },
@@ -1114,15 +1125,13 @@ async function loadStateFromDatabase() {
             safeStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(state.users));
         }
 
-        // Load logs from IndexedDB
-        state.logs = await dbGetAll(STORES.LOGS);
+        // Setup default logs if empty
         if (!state.logs) {
             state.logs = [];
         }
 
         // Load settings
-        const settingsData = await dbGetAll(STORES.SETTINGS);
-        const savedSettings = settingsData.find(s => s.id === 'app-settings');
+        const savedSettings = (settingsData || []).find(s => s.id === 'app-settings');
         if (savedSettings) {
             state.settings = {
                 storeName: (savedSettings.storeName === 'Wallmart Pharmacy' || !savedSettings.storeName) ? 'MediNest Pharmacy' : savedSettings.storeName,
@@ -1244,11 +1253,42 @@ async function saveCustomer(cust) {
 
     try {
         safeStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(state.customers));
-        if (db) {
-            await dbPut(STORES.CUSTOMERS, cust);
+        if (db && !db.isSupabase) {
+            await dbPutLocal(STORES.CUSTOMERS, cust);
+        }
+
+        if (supabaseClient) {
+            console.log(`[Supabase] Saving customer "${cust.name}" (${cust.id}) to remote database...`);
+            const { error } = await supabaseClient.from('customers').upsert(cust);
+            if (error) {
+                console.error(`[Supabase Error] Failed to write customer "${cust.name}" to Supabase:`, error);
+                showToast(`Supabase Write Error: ${error.message || error.details || error}`, 'danger');
+            } else {
+                console.log(`[Supabase] Write successful for "${cust.name}". Performing verification check...`);
+                // Verification read
+                const { data: verifyData, error: verifyError } = await supabaseClient
+                    .from('customers')
+                    .select('id,name')
+                    .eq('id', cust.id);
+                
+                if (verifyError) {
+                    console.error(`[Supabase Error] Verification fetch failed for "${cust.name}":`, verifyError);
+                    showToast(`Warning: Record saved, but Supabase verification read failed: ${verifyError.message}`, 'warning');
+                } else if (verifyData && verifyData.length > 0 && verifyData[0].id === cust.id) {
+                    console.log(`[Supabase] Verification succeeded! Record confirmed:`, verifyData[0]);
+                    showToast(`Customer "${cust.name}" successfully saved and verified in Supabase!`, 'success');
+                } else {
+                    console.error(`[Supabase Error] Verification failed. Record "${cust.id}" not found on remote database!`);
+                    showToast(`Warning: Customer saved locally, but not found during remote Supabase verification check.`, 'warning');
+                }
+            }
+        } else {
+            console.log(`[Supabase] Client offline or disabled. Saved customer "${cust.name}" locally.`);
+            showToast(`Customer "${cust.name}" saved to local database (Supabase Offline).`, 'info');
         }
     } catch (e) {
         console.error('Save customer persistence failed:', e);
+        showToast(`Error saving customer: ${e.message || e}`, 'danger');
     }
 }
 
@@ -1565,7 +1605,14 @@ function renderDashboard() {
     document.getElementById('currentDateString').textContent = now.toLocaleDateString('en-US', options);
 
     // Stats
-    document.getElementById('statTotalCustomers').textContent = state.customers.length;
+    const countEl = document.getElementById('statTotalCustomers');
+    if (countEl) {
+        if (supabaseClient) {
+            countEl.innerHTML = `${state.customers.length} <span style="font-size: 0.75rem; font-weight: 500; color: var(--success); vertical-align: middle; margin-left: 4px;">(Supabase)</span>`;
+        } else {
+            countEl.innerHTML = `${state.customers.length} <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); vertical-align: middle; margin-left: 4px;">(Local)</span>`;
+        }
+    }
     
     const todayStr = now.toISOString().split('T')[0];
     const todaySales = state.purchases.filter(p => p.billDate === todayStr).length;

@@ -1,0 +1,102 @@
+{
+  "tables": {
+    "customers": {
+      "columns": {
+        "id": "text (primary key)",
+        "name": "text",
+        "mobile": "text",
+        "age": "integer",
+        "gender": "text",
+        "address": "text",
+        "familyId": "text",
+        "pointsCurrent": "integer",
+        "pointsRedeemed": "integer",
+        "createdAt": "text",
+        "redeemedHistory": "jsonb",
+        "whatsappReminders": "jsonb"
+      },
+      "rls": "disabled"
+    },
+    "prescriptions": {
+      "columns": {
+        "id": "text (primary key)",
+        "customerId": "text",
+        "rxDate": "text",
+        "doctorName": "text",
+        "rxImages": "jsonb",
+        "pdfData": "text",
+        "notes": "text",
+        "createdAt": "text"
+      },
+      "rls": "disabled"
+    },
+    "purchases": {
+      "columns": {
+        "id": "text (primary key)",
+        "customerId": "text",
+        "billNumber": "text",
+        "billDate": "text",
+        "billAmount": "numeric",
+        "billPhoto": "text",
+        "medicines": "text",
+        "quantity": "integer",
+        "pointsEarned": "integer",
+        "createdAt": "text"
+      },
+      "rls": "disabled"
+    },
+    "refill_reminders": {
+      "columns": {
+        "id": "text (primary key)",
+        "customerId": "text",
+        "medicineName": "text",
+        "quantity": "integer",
+        "daysSupply": "integer",
+        "expectedRefillDate": "text",
+        "refillDate": "text",
+        "status": "text",
+        "createdAt": "text"
+      },
+      "rls": "disabled"
+    },
+    "users": {
+      "columns": {
+        "id": "text (primary key)",
+        "name": "text",
+        "mobile": "text",
+        "username": "text",
+        "password": "text",
+        "role": "text",
+        "createdAt": "text",
+        "lastLoginAt": "text",
+        "loginCount": "integer",
+        "status": "text"
+      },
+      "rls": "disabled"
+    },
+    "settings": {
+      "columns": {
+        "id": "text (primary key)",
+        "storeName": "text",
+        "tagline": "text",
+        "rupeesPerPoint": "integer",
+        "storeAddress": "text",
+        "storeMobile": "text",
+        "storeWhatsApp": "text",
+        "logo": "text",
+        "banner": "text"
+      },
+      "rls": "disabled"
+    },
+    "activity_logs": {
+      "columns": {
+        "id": "text (primary key)",
+        "name": "text",
+        "role": "text",
+        "action": "text",
+        "timestamp": "text"
+      },
+      "rls": "disabled"
+    }
+  }
+}
