@@ -706,6 +706,8 @@ function dbGetAll(storeName) {
                     return dbGetAllLocal(storeName);
                 }
                 const result = data || [];
+                
+                // Map results back to camelCase models with string IDs
                 if (table === 'customers') {
                     return result.map(c => ({
                         id: c.id.toString(),
@@ -715,22 +717,93 @@ function dbGetAll(storeName) {
                         gender: c.gender,
                         address: c.address,
                         familyId: c.familyId || '',
-                        pointsCurrent: c.loyalty_points || 0,
+                        pointsCurrent: c.pointsCurrent || c.loyalty_points || 0,
                         pointsRedeemed: c.pointsRedeemed || 0,
-                        createdAt: c.createdAt || new Date().toISOString(),
+                        createdAt: c.createdAt || c.created_at || new Date().toISOString(),
                         redeemedHistory: c.redeemedHistory || [],
                         whatsappReminders: c.whatsappReminders || []
                     }));
                 }
+                if (table === 'prescriptions') {
+                    return result.map(p => ({
+                        id: p.id.toString(),
+                        customerId: p.customerId,
+                        rxDate: p.rxDate,
+                        doctorName: p.doctorName,
+                        rxImages: p.rxImages || [],
+                        pdfData: p.pdfData || '',
+                        notes: p.notes || '',
+                        createdAt: p.createdAt || p.created_at || new Date().toISOString()
+                    }));
+                }
+                if (table === 'purchases') {
+                    return result.map(p => ({
+                        id: p.id.toString(),
+                        customerId: p.customerId,
+                        billNumber: p.billNumber || '',
+                        billDate: p.billDate,
+                        billAmount: parseFloat(p.billAmount || 0),
+                        billPhoto: p.billPhoto || '',
+                        medicines: p.medicines || '',
+                        quantity: 1, // Default fallback
+                        pointsEarned: parseInt(p.pointsEarned || 0),
+                        createdAt: p.createdAt || p.created_at || new Date().toISOString()
+                    }));
+                }
+                if (table === 'refill_reminders') {
+                    return result.map(r => ({
+                        id: r.id.toString(),
+                        customerId: r.customerId,
+                        medicineName: r.medicineName,
+                        quantity: parseInt(r.quantity || 1),
+                        daysSupply: parseInt(r.daysSupply || 30),
+                        expectedRefillDate: r.expectedRefillDate,
+                        refillDate: r.refillDate,
+                        status: r.status || 'Upcoming',
+                        createdAt: r.createdAt || r.created_at || new Date().toISOString()
+                    }));
+                }
+                if (table === 'users') {
+                    return result.map(u => ({
+                        id: u.id.toString(),
+                        name: u.name || u.fullname || 'System User',
+                        mobile: u.mobile || '',
+                        username: u.username,
+                        password: u.password,
+                        role: u.role || 'Pharmacist',
+                        createdAt: u.createdAt || u.created_at || new Date().toISOString(),
+                        lastLoginAt: u.lastLoginAt || '',
+                        loginCount: parseInt(u.loginCount || 0),
+                        status: 'Active' // Default to Active
+                    }));
+                }
+                if (table === 'settings') {
+                    if (result.length > 0) {
+                        const s = result[0];
+                        return [{
+                            id: 'app-settings',
+                            storeName: s.storeName || 'MediNest Pharmacy',
+                            tagline: s.tagline || 'Your Trusted Healthcare Partner',
+                            rupeesPerPoint: parseInt(s.rupeesPerPoint || 100),
+                            storeAddress: s.storeAddress || '',
+                            storeMobile: s.storeMobile || '',
+                            storeWhatsApp: s.storeWhatsApp || '',
+                            logo: s.logo || '',
+                            banner: s.banner || ''
+                        }];
+                    }
+                    return [];
+                }
                 if (table === 'activity_logs') {
                     return result.map(l => ({
-                        id: l.id,
+                        id: l.id.toString(),
                         name: l.username || 'System',
                         role: l.role || 'System',
                         action: l.action,
                         timestamp: l.timestamp || l.created_at
                     }));
                 }
+                
                 return result;
             }).catch(err => {
                 console.error(`[Supabase Error] dbGetAll catch for table "${table}":`, err);
@@ -748,74 +821,152 @@ function dbPut(storeName, item) {
         if (table) {
             console.log(`[Supabase] dbPut into table ${table}:`, item);
             
+            let payload = {};
+            let isInsert = false;
+            
             if (table === 'customers') {
-                const payload = {
+                payload = {
                     name: item.name,
                     mobile: item.mobile,
-                    age: parseInt(item.age),
+                    age: parseInt(item.age || 0),
                     gender: item.gender,
                     address: item.address,
-                    loyalty_points: item.pointsCurrent || 0
+                    familyId: item.familyId || '',
+                    pointsCurrent: parseInt(item.pointsCurrent || 0),
+                    pointsRedeemed: parseInt(item.pointsRedeemed || 0),
+                    createdAt: item.createdAt || new Date().toISOString(),
+                    redeemedHistory: item.redeemedHistory || [],
+                    whatsappReminders: item.whatsappReminders || [],
+                    loyalty_points: parseInt(item.pointsCurrent || 0)
                 };
-                const isInsert = !item.id || item.id.toString().startsWith('cust-');
-                if (isInsert) {
-                    return supabaseClient.from('customers').insert([payload]).select().then(({ data, error }) => {
-                        if (error) {
-                            console.error(`[Supabase Error] dbPut insert failed for customers:`, error);
-                            showToast(`Database Write Error [customers]: ${error.message || error}`, 'danger');
-                            return dbPutLocal(storeName, item);
-                        }
-                        if (data && data.length > 0) {
-                            const saved = data[0];
-                            item.id = saved.id.toString();
+                isInsert = !item.id || item.id.toString().startsWith('cust-') || isNaN(parseInt(item.id));
+            } 
+            else if (table === 'prescriptions') {
+                payload = {
+                    customerId: item.customerId,
+                    rxDate: item.rxDate,
+                    doctorName: item.doctorName,
+                    rxImages: item.rxImages || [],
+                    pdfData: item.pdfData || '',
+                    notes: item.notes || '',
+                    createdAt: item.createdAt || new Date().toISOString()
+                };
+                isInsert = !item.id || item.id.toString().startsWith('rx-') || isNaN(parseInt(item.id));
+            }
+            else if (table === 'purchases') {
+                payload = {
+                    customerId: item.customerId,
+                    billNumber: item.billNumber,
+                    billDate: item.billDate,
+                    billAmount: parseFloat(item.billAmount || 0),
+                    billPhoto: item.billPhoto || '',
+                    medicines: item.medicines || '',
+                    pointsEarned: parseInt(item.pointsEarned || 0),
+                    createdAt: item.createdAt || new Date().toISOString()
+                };
+                isInsert = !item.id || item.id.toString().startsWith('pur-') || isNaN(parseInt(item.id));
+            }
+            else if (table === 'refill_reminders') {
+                payload = {
+                    customerId: item.customerId,
+                    medicineName: item.medicineName,
+                    quantity: parseInt(item.quantity || 1),
+                    daysSupply: parseInt(item.daysSupply || 30),
+                    expectedRefillDate: item.expectedRefillDate,
+                    refillDate: item.refillDate,
+                    status: item.status || 'Upcoming',
+                    createdAt: item.createdAt || new Date().toISOString()
+                };
+                isInsert = !item.id || item.id.toString().startsWith('rem-') || isNaN(parseInt(item.id));
+            }
+            else if (table === 'users') {
+                payload = {
+                    name: item.name,
+                    mobile: item.mobile,
+                    username: item.username,
+                    password: item.password,
+                    role: item.role,
+                    createdAt: item.createdAt || new Date().toISOString(),
+                    lastLoginAt: item.lastLoginAt || '',
+                    loginCount: parseInt(item.loginCount || 0)
+                };
+                isInsert = !item.id || item.id.toString().startsWith('user-') || isNaN(parseInt(item.id));
+            }
+            else if (table === 'settings') {
+                payload = {
+                    rupeesPerPoint: parseInt(item.rupeesPerPoint || 100),
+                    storeAddress: item.storeAddress || '',
+                    storeMobile: item.storeMobile || '',
+                    storeWhatsApp: item.storeWhatsApp || '',
+                    banner: item.banner || ''
+                };
+                payload.id = 1;
+                isInsert = false;
+            }
+            else if (table === 'activity_logs') {
+                payload = {
+                    username: item.name || item.username || 'System',
+                    role: item.role || 'System',
+                    action: item.action,
+                    timestamp: item.timestamp || new Date().toISOString()
+                };
+                isInsert = !item.id || item.id.toString().startsWith('log-') || isNaN(parseInt(item.id));
+            }
+            
+            if (isInsert) {
+                return supabaseClient.from(table).insert([payload]).select().then(({ data, error }) => {
+                    if (error) {
+                        console.error(`[Supabase Error] dbPut insert failed for table "${table}":`, error);
+                        showToast(`Database Write Error [${table}]: ${error.message || error.details || error}`, 'danger');
+                        return dbPutLocal(storeName, item);
+                    }
+                    if (data && data.length > 0) {
+                        const saved = data[0];
+                        item.id = saved.id.toString();
+                        if (table === 'customers') {
                             item.pointsCurrent = saved.loyalty_points || 0;
                         }
+                    }
+                    dbPutLocal(storeName, item);
+                    return item;
+                }).catch(err => {
+                    console.error(`[Supabase Error] dbPut insert catch for table "${table}":`, err);
+                    showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
+                    return dbPutLocal(storeName, item);
+                });
+            } else {
+                let query = supabaseClient.from(table);
+                if (table === 'settings') {
+                    return query.upsert(payload).then(({ error }) => {
+                        if (error) {
+                            console.error(`[Supabase Error] dbPut upsert failed for settings:`, error);
+                            showToast(`Database Write Error [settings]: ${error.message || error.details || error}`, 'danger');
+                            return dbPutLocal(storeName, item);
+                        }
+                        dbPutLocal(storeName, item);
                         return item;
                     }).catch(err => {
-                        console.error(`[Supabase Error] dbPut insert catch for customers:`, err);
-                        showToast(`Database Connection Error [customers]: ${err.message || err}`, 'danger');
+                        console.error(`[Supabase Error] dbPut upsert catch for settings:`, err);
+                        showToast(`Database Connection Error [settings]: ${err.message || err}`, 'danger');
                         return dbPutLocal(storeName, item);
                     });
                 } else {
-                    return supabaseClient.from('customers').update(payload).eq('id', item.id).then(({ error }) => {
+                    const dbId = /^\d+$/.test(item.id.toString()) ? parseInt(item.id) : item.id;
+                    return query.update(payload).eq('id', dbId).then(({ error }) => {
                         if (error) {
-                            console.error(`[Supabase Error] dbPut update failed for customers:`, error);
-                            showToast(`Database Write Error [customers]: ${error.message || error}`, 'danger');
+                            console.error(`[Supabase Error] dbPut update failed for table "${table}":`, error);
+                            showToast(`Database Write Error [${table}]: ${error.message || error.details || error}`, 'danger');
                             return dbPutLocal(storeName, item);
                         }
+                        dbPutLocal(storeName, item);
                         return item;
                     }).catch(err => {
-                        console.error(`[Supabase Error] dbPut update catch for customers:`, err);
-                        showToast(`Database Connection Error [customers]: ${err.message || err}`, 'danger');
+                        console.error(`[Supabase Error] dbPut update catch for table "${table}":`, err);
+                        showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
                         return dbPutLocal(storeName, item);
                     });
                 }
             }
-            
-            let payload = { ...item };
-            if (table === 'activity_logs') {
-                payload = {
-                    id: item.id,
-                    username: item.name || 'System',
-                    role: item.role,
-                    action: item.action,
-                    timestamp: item.timestamp
-                };
-                delete payload.name;
-            }
-            
-            return supabaseClient.from(table).upsert(payload).then(({ error }) => {
-                if (error) {
-                    console.error(`[Supabase Error] dbPut failed for table "${table}":`, error);
-                    showToast(`Database Write Error [${table}]: ${error.message || error.details || error}`, 'danger');
-                    return dbPutLocal(storeName, item);
-                }
-                return item;
-            }).catch(err => {
-                console.error(`[Supabase Error] dbPut catch for table "${table}":`, err);
-                showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
-                return dbPutLocal(storeName, item);
-            });
         }
     }
     return dbPutLocal(storeName, item);
@@ -983,6 +1134,16 @@ function initApp() {
                 runAutomatedRegistrationTest();
             }
         });
+}
+
+function checkRemindersDueNotification() {
+    if (!state.reminders || state.reminders.length === 0) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dueReminders = state.reminders.filter(r => r.status === 'Upcoming' && r.refillDate <= todayStr);
+    
+    if (dueReminders.length > 0) {
+        showToast(`Attention: There are ${dueReminders.length} refill reminders due or overdue today!`, 'warning');
+    }
 }
 
 function checkSessionAndLogin() {
@@ -4249,14 +4410,9 @@ function renderMonitoringDashboard() {
                 <td>${regDateStr}</td>
                 <td>${lastLoginStr}</td>
                 <td>${u.loginCount || 0}</td>
-                <td><span class="item-badge ${statusClass}">${statusText}</span></td>
+                <td><span class="item-badge badge-success">Active</span></td>
                 <td style="text-align:right;">
                     <div style="display:flex;gap:6px;justify-content:flex-end;">
-                        ${!isSelf ? `
-                            <button type="button" class="btn btn-secondary btn-sm toggle-user-status-btn" data-id="${u.id}" data-status="${statusText}">
-                                ${statusText === 'Active' ? 'Disable' : 'Enable'}
-                            </button>
-                        ` : ''}
                         <button type="button" class="btn btn-primary btn-sm reset-user-password-btn" data-id="${u.id}" data-username="${u.username}">Reset PW</button>
                         ${!isSelf && !isProtectedDefault ? `
                             <button type="button" class="btn btn-danger btn-sm delete-user-monitor-btn" data-id="${u.id}">Delete</button>
@@ -4265,16 +4421,6 @@ function renderMonitoringDashboard() {
                 </td>
             `;
             userTbody.appendChild(tr);
-        });
-
-        // Bind toggle status
-        userTbody.querySelectorAll('.toggle-user-status-btn').forEach(btn => {
-            safeBind(btn, 'click', async (e) => {
-                const id = e.currentTarget.getAttribute('data-id');
-                const currentStatus = e.currentTarget.getAttribute('data-status');
-                const newStatus = currentStatus === 'Active' ? 'Disabled' : 'Active';
-                await toggleUserStatus(id, newStatus);
-            });
         });
 
         // Bind reset password
@@ -4303,27 +4449,10 @@ function renderMonitoringDashboard() {
 }
 
 async function toggleUserStatus(id, newStatus) {
-    const user = state.users.find(u => u.id === id);
-    if (!user) return;
-    
-    user.status = newStatus;
-    const userIndex = state.users.findIndex(u => u.id === id);
-    if (userIndex >= 0) {
-        state.users[userIndex] = user;
-    }
-    
-    try {
-        safeStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(state.users));
-        if (db) {
-            await dbPut(STORES.USERS, user);
-        }
-        showToast(`User "${user.username}" is now ${newStatus === 'Active' ? 'enabled' : 'disabled'}.`, 'success');
-        await logActivity(`Admin ${newStatus === 'Active' ? 'Enabled' : 'Disabled'} user account for ${user.name} (Username: ${user.username})`);
-        renderMonitoringDashboard();
-    } catch (err) {
-        console.error('Error toggling user status:', err);
-    }
+    // No-op as status column does not exist on remote database
+    console.log(`toggleUserStatus no-op called for ${id} with status ${newStatus}`);
 }
+
 
 function openAdminResetPasswordModal(id, username) {
     document.getElementById('resetPasswordUserId').value = id;
