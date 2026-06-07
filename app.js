@@ -1069,8 +1069,8 @@ async function migrateLocalDataToSupabase() {
         // 2. Migrate Users
         const usersList = await localGet(STORES.USERS);
         for (const u of usersList) {
+            const isTempUserId = !u.id || u.id.toString().startsWith('user-') || isNaN(parseInt(u.id));
             const payload = {
-                id: u.id,
                 name: u.name,
                 mobile: u.mobile,
                 username: u.username,
@@ -1078,11 +1078,26 @@ async function migrateLocalDataToSupabase() {
                 role: u.role,
                 createdAt: u.createdAt || new Date().toISOString(),
                 lastLoginAt: u.lastLoginAt || '',
-                loginCount: parseInt(u.loginCount || 0),
-                status: u.status || 'Active'
+                loginCount: parseInt(u.loginCount || 0)
             };
-            const { error } = await supabaseClient.from('users').upsert(payload);
-            if (error) console.error('[Supabase Migration] User upsert failed:', error);
+            if (!isTempUserId) {
+                // Already has a numeric DB id — upsert to update existing row
+                payload.id = parseInt(u.id);
+            }
+            if (isTempUserId) {
+                const { data, error } = await supabaseClient.from('users').insert([payload]).select();
+                if (error) {
+                    console.error('[Supabase Migration] User insert failed:', error);
+                } else if (data && data.length > 0) {
+                    const oldId = u.id;
+                    u.id = data[0].id.toString();
+                    await dbPutLocal(STORES.USERS, u);
+                    console.log(`[Supabase Migration] Migrated user: ${oldId} -> ${u.id}`);
+                }
+            } else {
+                const { error } = await supabaseClient.from('users').upsert(payload);
+                if (error) console.error('[Supabase Migration] User upsert failed:', error);
+            }
         }
 
         // Keep track of customer ID mapping (local temp string -> remote integer string)
@@ -1091,27 +1106,22 @@ async function migrateLocalDataToSupabase() {
         // 3. Migrate Customers
         const customersList = await localGet(STORES.CUSTOMERS);
         for (const c of customersList) {
-            const payload = {
-                name: c.name,
-                mobile: c.mobile,
-                age: parseInt(c.age || 0),
-                gender: c.gender,
-                address: c.address,
-                familyId: c.familyId || '',
-                pointsCurrent: parseInt(c.pointsCurrent || 0),
-                pointsRedeemed: parseInt(c.pointsRedeemed || 0),
-                createdAt: c.createdAt || new Date().toISOString(),
-                redeemedHistory: c.redeemedHistory || [],
-                whatsappReminders: c.whatsappReminders || [],
-                loyalty_points: parseInt(c.pointsCurrent || 0)
-            };
-            
             const isTempId = !c.id || c.id.toString().startsWith('cust-') || isNaN(parseInt(c.id));
-            if (!isTempId) {
-                const { error } = await supabaseClient.from('customers').upsert({ id: parseInt(c.id), ...payload });
-                if (error) console.error(`[Supabase Migration] Customer upsert failed for ID ${c.id}:`, error);
-                customerIdMap[c.id] = c.id.toString();
-            } else {
+            if (isTempId) {
+                const payload = {
+                    name: c.name,
+                    mobile: c.mobile,
+                    age: parseInt(c.age || 0),
+                    gender: c.gender,
+                    address: c.address,
+                    familyId: c.familyId || '',
+                    pointsCurrent: parseInt(c.pointsCurrent || 0),
+                    pointsRedeemed: parseInt(c.pointsRedeemed || 0),
+                    createdAt: c.createdAt || new Date().toISOString(),
+                    redeemedHistory: c.redeemedHistory || [],
+                    whatsappReminders: c.whatsappReminders || [],
+                    loyalty_points: parseInt(c.pointsCurrent || 0)
+                };
                 const { data, error } = await supabaseClient.from('customers').insert([payload]).select();
                 if (error) {
                     console.error('[Supabase Migration] Customer insert failed:', error);
@@ -1123,28 +1133,26 @@ async function migrateLocalDataToSupabase() {
                     await dbPutLocal(STORES.CUSTOMERS, c);
                     console.log(`[Supabase Migration] Migrated customer: ${oldId} -> ${newId}`);
                 }
+            } else {
+                customerIdMap[c.id] = c.id.toString();
             }
         }
 
         // 4. Migrate Prescriptions
         const rxList = await localGet(STORES.PRESCRIPTIONS);
         for (const rx of rxList) {
-            const mappedCustId = customerIdMap[rx.customerId] || rx.customerId;
-            const payload = {
-                customerId: mappedCustId,
-                rxDate: rx.rxDate,
-                doctorName: rx.doctorName,
-                rxImages: rx.rxImages || [],
-                pdfData: rx.pdfData || '',
-                notes: rx.notes || '',
-                createdAt: rx.createdAt || new Date().toISOString()
-            };
-            
             const isTempId = !rx.id || rx.id.toString().startsWith('rx-') || isNaN(parseInt(rx.id));
-            if (!isTempId) {
-                const { error } = await supabaseClient.from('prescriptions').upsert({ id: parseInt(rx.id), ...payload });
-                if (error) console.error(`[Supabase Migration] Prescription upsert failed for ID ${rx.id}:`, error);
-            } else {
+            if (isTempId) {
+                const mappedCustId = customerIdMap[rx.customerId] || rx.customerId;
+                const payload = {
+                    customerId: mappedCustId,
+                    rxDate: rx.rxDate,
+                    doctorName: rx.doctorName,
+                    rxImages: rx.rxImages || [],
+                    pdfData: rx.pdfData || '',
+                    notes: rx.notes || '',
+                    createdAt: rx.createdAt || new Date().toISOString()
+                };
                 const { data, error } = await supabaseClient.from('prescriptions').insert([payload]).select();
                 if (error) {
                     console.error('[Supabase Migration] Prescription insert failed:', error);
@@ -1161,24 +1169,20 @@ async function migrateLocalDataToSupabase() {
         // 5. Migrate Purchases
         const purchasesList = await localGet(STORES.PURCHASES);
         for (const p of purchasesList) {
-            const mappedCustId = customerIdMap[p.customerId] || p.customerId;
-            const payload = {
-                customerId: mappedCustId,
-                billNumber: p.billNumber,
-                billDate: p.billDate,
-                billAmount: parseFloat(p.billAmount || 0),
-                billPhoto: p.billPhoto || '',
-                medicines: p.medicines || '',
-                quantity: parseInt(p.quantity || 1),
-                pointsEarned: parseInt(p.pointsEarned || 0),
-                createdAt: p.createdAt || new Date().toISOString()
-            };
-            
             const isTempId = !p.id || p.id.toString().startsWith('pur-') || isNaN(parseInt(p.id));
-            if (!isTempId) {
-                const { error } = await supabaseClient.from('purchases').upsert({ id: parseInt(p.id), ...payload });
-                if (error) console.error(`[Supabase Migration] Purchase upsert failed for ID ${p.id}:`, error);
-            } else {
+            if (isTempId) {
+                const mappedCustId = customerIdMap[p.customerId] || p.customerId;
+                const payload = {
+                    customerId: mappedCustId,
+                    billNumber: p.billNumber,
+                    billDate: p.billDate,
+                    billAmount: parseFloat(p.billAmount || 0),
+                    billPhoto: p.billPhoto || '',
+                    medicines: p.medicines || '',
+                    quantity: parseInt(p.quantity || 1),
+                    pointsEarned: parseInt(p.pointsEarned || 0),
+                    createdAt: p.createdAt || new Date().toISOString()
+                };
                 const { data, error } = await supabaseClient.from('purchases').insert([payload]).select();
                 if (error) {
                     console.error('[Supabase Migration] Purchase insert failed:', error);
@@ -1195,23 +1199,19 @@ async function migrateLocalDataToSupabase() {
         // 6. Migrate Reminders
         const remindersList = await localGet(STORES.REMINDERS);
         for (const rem of remindersList) {
-            const mappedCustId = customerIdMap[rem.customerId] || rem.customerId;
-            const payload = {
-                customerId: mappedCustId,
-                medicineName: rem.medicineName,
-                quantity: parseInt(rem.quantity || 1),
-                daysSupply: parseInt(rem.daysSupply || 30),
-                expectedRefillDate: rem.expectedRefillDate,
-                refillDate: rem.refillDate,
-                status: rem.status || 'Upcoming',
-                createdAt: rem.createdAt || new Date().toISOString()
-            };
-            
             const isTempId = !rem.id || rem.id.toString().startsWith('rem-') || isNaN(parseInt(rem.id));
-            if (!isTempId) {
-                const { error } = await supabaseClient.from('refill_reminders').upsert({ id: parseInt(rem.id), ...payload });
-                if (error) console.error(`[Supabase Migration] Reminder upsert failed for ID ${rem.id}:`, error);
-            } else {
+            if (isTempId) {
+                const mappedCustId = customerIdMap[rem.customerId] || rem.customerId;
+                const payload = {
+                    customerId: mappedCustId,
+                    medicineName: rem.medicineName,
+                    quantity: parseInt(rem.quantity || 1),
+                    daysSupply: parseInt(rem.daysSupply || 30),
+                    expectedRefillDate: rem.expectedRefillDate,
+                    refillDate: rem.refillDate,
+                    status: rem.status || 'Upcoming',
+                    createdAt: rem.createdAt || new Date().toISOString()
+                };
                 const { data, error } = await supabaseClient.from('refill_reminders').insert([payload]).select();
                 if (error) {
                     console.error('[Supabase Migration] Reminder insert failed:', error);
@@ -1228,18 +1228,14 @@ async function migrateLocalDataToSupabase() {
         // 7. Migrate Logs
         const logsList = await localGet(STORES.LOGS);
         for (const l of logsList) {
-            const payload = {
-                username: l.name || l.username || 'System',
-                role: l.role || 'System',
-                action: l.action,
-                timestamp: l.timestamp || new Date().toISOString()
-            };
-            
             const isTempId = !l.id || l.id.toString().startsWith('log-') || isNaN(parseInt(l.id));
-            if (!isTempId) {
-                const { error } = await supabaseClient.from('activity_logs').upsert({ id: parseInt(l.id), ...payload });
-                if (error) console.error(`[Supabase Migration] Log upsert failed for ID ${l.id}:`, error);
-            } else {
+            if (isTempId) {
+                const payload = {
+                    username: l.name || l.username || 'System',
+                    role: l.role || 'System',
+                    action: l.action,
+                    timestamp: l.timestamp || new Date().toISOString()
+                };
                 const { data, error } = await supabaseClient.from('activity_logs').insert([payload]).select();
                 if (error) {
                     console.error('[Supabase Migration] Log insert failed:', error);
