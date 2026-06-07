@@ -710,71 +710,71 @@ function dbGetAll(storeName) {
                 // Map results back to camelCase models with string IDs
                 if (table === 'customers') {
                     return result.map(c => ({
-                        id: c.id.toString(),
-                        name: c.name,
-                        mobile: c.mobile,
-                        age: c.age,
-                        gender: c.gender,
-                        address: c.address,
-                        familyId: c.familyId || '',
-                        pointsCurrent: c.pointsCurrent || c.loyalty_points || 0,
-                        pointsRedeemed: c.pointsRedeemed || 0,
+                        id: c.id ? c.id.toString() : '',
+                        name: c.name || '',
+                        mobile: c.mobile || '',
+                        age: c.age || 0,
+                        gender: c.gender || '',
+                        address: c.address || '',
+                        familyId: c.familyId || c.family_id || c.familyid || '',
+                        pointsCurrent: parseInt(c.pointsCurrent || c.loyalty_points || c.points || 0),
+                        pointsRedeemed: parseInt(c.pointsRedeemed || c.points_redeemed || 0),
                         createdAt: c.createdAt || c.created_at || new Date().toISOString(),
-                        redeemedHistory: c.redeemedHistory || [],
-                        whatsappReminders: c.whatsappReminders || []
+                        redeemedHistory: c.redeemedHistory || c.redeemed_history || [],
+                        whatsappReminders: c.whatsappReminders || c.whatsapp_reminders || []
                     }));
                 }
                 if (table === 'prescriptions') {
                     return result.map(p => ({
-                        id: p.id.toString(),
-                        customerId: p.customerId,
-                        rxDate: p.rxDate,
-                        doctorName: p.doctorName,
-                        rxImages: p.rxImages || [],
-                        pdfData: p.pdfData || '',
+                        id: p.id ? p.id.toString() : '',
+                        customerId: p.customerId || p.customer_id || '',
+                        rxDate: p.rxDate || p.rx_date || '',
+                        doctorName: p.doctorName || p.doctor_name || '',
+                        rxImages: p.rxImages || p.rx_images || [],
+                        pdfData: p.pdfData || p.pdf_data || '',
                         notes: p.notes || '',
                         createdAt: p.createdAt || p.created_at || new Date().toISOString()
                     }));
                 }
                 if (table === 'purchases') {
                     return result.map(p => ({
-                        id: p.id.toString(),
-                        customerId: p.customerId,
-                        billNumber: p.billNumber || '',
-                        billDate: p.billDate,
-                        billAmount: parseFloat(p.billAmount || 0),
-                        billPhoto: p.billPhoto || '',
+                        id: p.id ? p.id.toString() : '',
+                        customerId: p.customerId || p.customer_id || '',
+                        billNumber: p.billNumber || p.bill_number || '',
+                        billDate: p.billDate || p.bill_date || '',
+                        billAmount: parseFloat(p.billAmount || p.bill_amount || 0),
+                        billPhoto: p.billPhoto || p.bill_photo || '',
                         medicines: p.medicines || '',
-                        quantity: 1, // Default fallback
-                        pointsEarned: parseInt(p.pointsEarned || 0),
+                        quantity: parseInt(p.quantity || 1),
+                        pointsEarned: parseInt(p.pointsEarned || p.points_earned || 0),
                         createdAt: p.createdAt || p.created_at || new Date().toISOString()
                     }));
                 }
                 if (table === 'refill_reminders') {
                     return result.map(r => ({
-                        id: r.id.toString(),
-                        customerId: r.customerId,
-                        medicineName: r.medicineName,
+                        id: r.id ? r.id.toString() : '',
+                        customerId: r.customerId || r.customer_id || '',
+                        medicineName: r.medicineName || r.medicine_name || '',
                         quantity: parseInt(r.quantity || 1),
-                        daysSupply: parseInt(r.daysSupply || 30),
-                        expectedRefillDate: r.expectedRefillDate,
-                        refillDate: r.refillDate,
+                        daysSupply: parseInt(r.daysSupply || r.days_supply || 30),
+                        expectedRefillDate: r.expectedRefillDate || r.expected_refill_date || '',
+                        refillDate: r.refillDate || r.refill_date || '',
                         status: r.status || 'Upcoming',
                         createdAt: r.createdAt || r.created_at || new Date().toISOString()
                     }));
                 }
                 if (table === 'users') {
                     return result.map(u => ({
-                        id: u.id.toString(),
+                        id: u.id ? u.id.toString() : '',
                         name: u.name || u.fullname || 'System User',
                         mobile: u.mobile || '',
-                        username: u.username,
-                        password: u.password,
+                        username: u.username || '',
+                        password: u.password || '',
                         role: u.role || 'Pharmacist',
                         createdAt: u.createdAt || u.created_at || new Date().toISOString(),
-                        lastLoginAt: u.lastLoginAt || '',
-                        loginCount: parseInt(u.loginCount || 0),
-                        status: 'Active' // Default to Active
+                        lastLoginAt: u.lastLoginAt || u.last_login_at || '',
+                        loginCount: parseInt(u.loginCount || u.login_count || 0),
+                        status: u.status || 'Active'
                     }));
                 }
                 if (table === 'settings') {
@@ -796,11 +796,11 @@ function dbGetAll(storeName) {
                 }
                 if (table === 'activity_logs') {
                     return result.map(l => ({
-                        id: l.id.toString(),
-                        name: l.username || 'System',
+                        id: l.id ? l.id.toString() : '',
+                        name: l.username || l.name || 'System',
                         role: l.role || 'System',
-                        action: l.action,
-                        timestamp: l.timestamp || l.created_at
+                        action: l.action || '',
+                        timestamp: l.timestamp || l.created_at || new Date().toISOString()
                     }));
                 }
                 
@@ -1877,8 +1877,8 @@ function renderCustomersList() {
     const filterVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
     
     const filtered = state.customers.filter(c => 
-        c.name.toLowerCase().includes(filterVal) || 
-        c.mobile.includes(filterVal)
+        (c.name || '').toLowerCase().includes(filterVal) || 
+        (c.mobile || '').includes(filterVal)
     );
 
     if (filtered.length === 0) {
@@ -2655,8 +2655,8 @@ function setupGlobalSearch() {
         }
 
         const matches = state.customers.filter(c => 
-            c.name.toLowerCase().includes(val) || 
-            c.mobile.includes(val)
+            (c.name || '').toLowerCase().includes(val) || 
+            (c.mobile || '').includes(val)
         );
 
         if (matches.length === 0) {
@@ -2710,8 +2710,8 @@ function setupDashboardSearch() {
         }
 
         const matches = state.customers.filter(c => 
-            c.name.toLowerCase().includes(val) || 
-            c.mobile.includes(val)
+            (c.name || '').toLowerCase().includes(val) || 
+            (c.mobile || '').includes(val)
         );
 
         if (matches.length === 0) {
@@ -4078,8 +4078,9 @@ function bindProfileTriggers() {
 }
 
 function getInitials(name) {
+    if (!name) return '';
     const parts = name.split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    if (parts.length >= 2 && parts[0] && parts[1]) return (parts[0][0] + parts[1][0]).toUpperCase();
     if (name.length >= 2) return name.substr(0, 2).toUpperCase();
     return name.toUpperCase();
 }
