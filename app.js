@@ -199,143 +199,16 @@ function safeBind(target, event, handler) {
 }
 
 // --- DEFAULT RICH MOCK DATA ---
-const MOCK_CUSTOMERS = [
-    {
-        id: 'cust-1',
-        name: 'Rahul Sharma',
-        mobile: '9876543210',
-        age: 52,
-        gender: 'Male',
-        address: 'Flat 402, Green Meadows Apartment, Sector 15, Vashi, Navi Mumbai - 400703',
-        familyId: 'FAM-1029',
-        pointsCurrent: 165,
-        pointsRedeemed: 15,
-        createdAt: '2026-04-12T10:15:30Z',
-        redeemedHistory: [
-            { points: 15, reason: 'Redeemed ₹150 discount on Bill #9482', date: '2026-05-10T14:30:00Z' }
-        ],
-        whatsappReminders: []
-    },
-    {
-        id: 'cust-2',
-        name: 'Priya Patel',
-        mobile: '8765432109',
-        age: 28,
-        gender: 'Female',
-        address: 'B-12, Shanti Kunj Society, Near Swabhumi, Kankurgachi, Kolkata - 700054',
-        familyId: 'FAM-2081',
-        pointsCurrent: 18,
-        pointsRedeemed: 0,
-        createdAt: '2026-05-02T11:40:00Z',
-        redeemedHistory: [],
-        whatsappReminders: []
-    },
-    {
-        id: 'cust-3',
-        name: 'Amit Verma',
-        mobile: '7654321098',
-        age: 67,
-        gender: 'Male',
-        address: 'H.No. 145, Ward 10, Civil Lines, Near Jubilee Park, Jamshedpur - 831001',
-        familyId: '',
-        pointsCurrent: 95,
-        pointsRedeemed: 30,
-        createdAt: '2026-03-20T09:00:00Z',
-        redeemedHistory: [
-            { points: 30, reason: 'Redeemed free health check voucher', date: '2026-04-25T11:00:00Z' }
-        ],
-        whatsappReminders: []
-    }
-];
+const MOCK_CUSTOMERS = [];
 
 const defaultRxSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f1f5f9"/><text x="10" y="30" font-family="sans-serif" font-size="10" font-weight="bold" fill="%230f172a">Rx</text><line x1="10" y1="35" x2="90" y2="35" stroke="%23cbd5e1" stroke-width="0.5"/><text x="10" y="48" font-family="sans-serif" font-size="5" fill="%23334155">Tab. Telmisartan 40mg - 1 OD</text><text x="10" y="58" font-family="sans-serif" font-size="5" fill="%23334155">Tab. Atorvastatin 10mg - 1 HS</text><text x="10" y="68" font-family="sans-serif" font-size="5" fill="%23334155">Tab. Clopidogrel 75mg - 1 OD</text><text x="10" y="90" font-family="sans-serif" font-size="4" fill="%2364748b">Refills: 3 Months</text></svg>';
 
-const MOCK_PRESCRIPTIONS = [
-    {
-        id: 'rx-1',
-        customerId: 'cust-3',
-        rxDate: '2026-05-18',
-        doctorName: 'Dr. Sandeep Jha (MD Cardiology)',
-        rxImages: [defaultRxSvg],
-        pdfData: '',
-        notes: 'Telmisartan for hypertension, Atorvastatin for high cholesterol. To be reviewed after 3 months.',
-        createdAt: '2026-05-18T12:00:00Z'
-    },
-    {
-        id: 'rx-2',
-        customerId: 'cust-1',
-        rxDate: '2026-05-24',
-        doctorName: 'Dr. Ananya Reddy (Dermatologist)',
-        rxImages: [defaultRxSvg],
-        pdfData: '',
-        notes: 'Apply cream on rash. Cetirizine for allergies.',
-        createdAt: '2026-05-24T16:10:00Z'
-    }
-];
+const MOCK_PRESCRIPTIONS = [];
 
-const MOCK_PURCHASES = [
-    {
-        id: 'pur-1',
-        customerId: 'cust-3',
-        billNumber: 'INV-2026-0089',
-        billDate: '2026-05-18',
-        billAmount: 3200,
-        billPhoto: '',
-        medicines: 'Telmisartan 40mg (90 Tabs), Atorvastatin 10mg (90 Tabs), Clopidogrel 75mg (90 Tabs)',
-        quantity: 3,
-        pointsEarned: 32,
-        createdAt: '2026-05-18T12:15:00Z'
-    },
-    {
-        id: 'pur-2',
-        customerId: 'cust-1',
-        billNumber: 'INV-2026-0120',
-        billDate: '2026-05-24',
-        billAmount: 850,
-        billPhoto: '',
-        medicines: 'Cream Mupirocin 2% (2 tubes), Cetirizine 10mg (10 Tabs)',
-        quantity: 3,
-        pointsEarned: 8,
-        createdAt: '2026-05-24T16:25:00Z'
-    },
-    {
-        id: 'pur-3',
-        customerId: 'cust-2',
-        billNumber: 'INV-2026-0155',
-        billDate: '2026-05-29',
-        billAmount: 1840,
-        billPhoto: '',
-        medicines: 'Multivitamin capsules (30 Tabs), Vitamin C 500mg chewable (60 Tabs)',
-        quantity: 2,
-        pointsEarned: 18,
-        createdAt: '2026-05-29T18:02:00Z'
-    }
-];
+const MOCK_PURCHASES = [];
 
-const MOCK_REMINDERS = [
-    {
-        id: 'rem-1',
-        customerId: 'cust-3',
-        medicineName: 'Telmisartan & Atorvastatin Monthly Pack',
-        quantity: 90,
-        daysSupply: 30,
-        expectedRefillDate: '2026-06-18',
-        refillDate: '2026-06-15',
-        status: 'Upcoming',
-        createdAt: '2026-05-18T12:15:00Z'
-    },
-    {
-        id: 'rem-2',
-        customerId: 'cust-1',
-        medicineName: 'Mupirocin Cream Refill',
-        quantity: 1,
-        daysSupply: 10,
-        expectedRefillDate: '2026-06-06',
-        refillDate: '2026-06-03',
-        status: 'Upcoming',
-        createdAt: '2026-05-24T16:25:00Z'
-    }
-];
+const MOCK_REMINDERS = [];
+
 
 // --- INDEXEDDB DATABASE MANAGER ---
 let DB_NAME = 'WallmartPharmacyDB';
@@ -832,7 +705,33 @@ function dbGetAll(storeName) {
                     showToast(`Database Read Error [${table}]: ${error.message || error.details || error}`, 'danger');
                     return dbGetAllLocal(storeName);
                 }
-                return data || [];
+                const result = data || [];
+                if (table === 'customers') {
+                    return result.map(c => ({
+                        id: c.id.toString(),
+                        name: c.name,
+                        mobile: c.mobile,
+                        age: c.age,
+                        gender: c.gender,
+                        address: c.address,
+                        familyId: c.familyId || '',
+                        pointsCurrent: c.loyalty_points || 0,
+                        pointsRedeemed: c.pointsRedeemed || 0,
+                        createdAt: c.createdAt || new Date().toISOString(),
+                        redeemedHistory: c.redeemedHistory || [],
+                        whatsappReminders: c.whatsappReminders || []
+                    }));
+                }
+                if (table === 'activity_logs') {
+                    return result.map(l => ({
+                        id: l.id,
+                        name: l.username || 'System',
+                        role: l.role || 'System',
+                        action: l.action,
+                        timestamp: l.timestamp || l.created_at
+                    }));
+                }
+                return result;
             }).catch(err => {
                 console.error(`[Supabase Error] dbGetAll catch for table "${table}":`, err);
                 showToast(`Database Connection Error [${table}]: ${err.message || err}`, 'danger');
@@ -848,7 +747,64 @@ function dbPut(storeName, item) {
         const table = getSupabaseTable(storeName);
         if (table) {
             console.log(`[Supabase] dbPut into table ${table}:`, item);
-            return supabaseClient.from(table).upsert(item).then(({ error }) => {
+            
+            if (table === 'customers') {
+                const payload = {
+                    name: item.name,
+                    mobile: item.mobile,
+                    age: parseInt(item.age),
+                    gender: item.gender,
+                    address: item.address,
+                    loyalty_points: item.pointsCurrent || 0
+                };
+                const isInsert = !item.id || item.id.toString().startsWith('cust-');
+                if (isInsert) {
+                    return supabaseClient.from('customers').insert([payload]).select().then(({ data, error }) => {
+                        if (error) {
+                            console.error(`[Supabase Error] dbPut insert failed for customers:`, error);
+                            showToast(`Database Write Error [customers]: ${error.message || error}`, 'danger');
+                            return dbPutLocal(storeName, item);
+                        }
+                        if (data && data.length > 0) {
+                            const saved = data[0];
+                            item.id = saved.id.toString();
+                            item.pointsCurrent = saved.loyalty_points || 0;
+                        }
+                        return item;
+                    }).catch(err => {
+                        console.error(`[Supabase Error] dbPut insert catch for customers:`, err);
+                        showToast(`Database Connection Error [customers]: ${err.message || err}`, 'danger');
+                        return dbPutLocal(storeName, item);
+                    });
+                } else {
+                    return supabaseClient.from('customers').update(payload).eq('id', item.id).then(({ error }) => {
+                        if (error) {
+                            console.error(`[Supabase Error] dbPut update failed for customers:`, error);
+                            showToast(`Database Write Error [customers]: ${error.message || error}`, 'danger');
+                            return dbPutLocal(storeName, item);
+                        }
+                        return item;
+                    }).catch(err => {
+                        console.error(`[Supabase Error] dbPut update catch for customers:`, err);
+                        showToast(`Database Connection Error [customers]: ${err.message || err}`, 'danger');
+                        return dbPutLocal(storeName, item);
+                    });
+                }
+            }
+            
+            let payload = { ...item };
+            if (table === 'activity_logs') {
+                payload = {
+                    id: item.id,
+                    username: item.name || 'System',
+                    role: item.role,
+                    action: item.action,
+                    timestamp: item.timestamp
+                };
+                delete payload.name;
+            }
+            
+            return supabaseClient.from(table).upsert(payload).then(({ error }) => {
                 if (error) {
                     console.error(`[Supabase Error] dbPut failed for table "${table}":`, error);
                     showToast(`Database Write Error [${table}]: ${error.message || error.details || error}`, 'danger');
@@ -864,6 +820,7 @@ function dbPut(storeName, item) {
     }
     return dbPutLocal(storeName, item);
 }
+
 
 function dbDelete(storeName, id) {
     if (supabaseClient) {
@@ -1161,7 +1118,8 @@ async function loadStateFromDatabase() {
 
     // Session is checked asynchronously in initApp finally()
 
-    // Populate mock customers if database is completely empty
+    // Populate mock customers if database is completely empty (removed to ensure only Supabase data is fetched)
+    /*
     if (!state.customers || state.customers.length === 0) {
         state.customers = MOCK_CUSTOMERS;
         state.prescriptions = MOCK_PRESCRIPTIONS;
@@ -1169,14 +1127,16 @@ async function loadStateFromDatabase() {
         state.reminders = MOCK_REMINDERS;
         await saveAllStateToDatabase();
     }
+    */
 }
 
 function loadStateFromStorageFallback() {
     try {
-        state.customers = JSON.parse(safeStorage.getItem(STORAGE_KEYS.CUSTOMERS)) || MOCK_CUSTOMERS;
-        state.prescriptions = JSON.parse(safeStorage.getItem(STORAGE_KEYS.PRESCRIPTIONS)) || MOCK_PRESCRIPTIONS;
-        state.purchases = JSON.parse(safeStorage.getItem(STORAGE_KEYS.PURCHASES)) || MOCK_PURCHASES;
-        state.reminders = JSON.parse(safeStorage.getItem(STORAGE_KEYS.REMINDERS)) || MOCK_REMINDERS;
+        state.customers = JSON.parse(safeStorage.getItem(STORAGE_KEYS.CUSTOMERS)) || [];
+        state.prescriptions = JSON.parse(safeStorage.getItem(STORAGE_KEYS.PRESCRIPTIONS)) || [];
+        state.purchases = JSON.parse(safeStorage.getItem(STORAGE_KEYS.PURCHASES)) || [];
+        state.reminders = JSON.parse(safeStorage.getItem(STORAGE_KEYS.REMINDERS)) || [];
+
         
         state.users = JSON.parse(safeStorage.getItem(STORAGE_KEYS.USERS)) || [
             { id: 'user-admin', username: 'admin', password: 'admin123', role: 'Admin', name: 'System Admin', mobile: '9999999999' },
@@ -1244,46 +1204,47 @@ function saveStateToStorage() {
 
 // --- DOCK DATA WRITERS ---
 async function saveCustomer(cust) {
-    const index = state.customers.findIndex(c => c.id === cust.id);
-    if (index >= 0) {
-        state.customers[index] = cust;
-    } else {
-        state.customers.push(cust);
-    }
-
+    const oldId = cust.id;
     try {
-        safeStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(state.customers));
-        if (db && !db.isSupabase) {
-            await dbPutLocal(STORES.CUSTOMERS, cust);
-        }
-
         if (supabaseClient) {
             console.log(`[Supabase] Saving customer "${cust.name}" (${cust.id}) to remote database...`);
-            const { error } = await supabaseClient.from('customers').upsert(cust);
-            if (error) {
-                console.error(`[Supabase Error] Failed to write customer "${cust.name}" to Supabase:`, error);
-                showToast(`Supabase Write Error: ${error.message || error.details || error}`, 'danger');
-            } else {
-                console.log(`[Supabase] Write successful for "${cust.name}". Performing verification check...`);
-                // Verification read
-                const { data: verifyData, error: verifyError } = await supabaseClient
-                    .from('customers')
-                    .select('id,name')
-                    .eq('id', cust.id);
+            const savedItem = await dbPut(STORES.CUSTOMERS, cust);
+            
+            // If the ID was generated by the database, sync the local state and IndexedDB
+            if (oldId !== savedItem.id) {
+                console.log(`[Supabase] Customer ID updated from ${oldId} to ${savedItem.id}`);
+                state.customers = state.customers.filter(c => c.id !== oldId);
+                state.customers.push(savedItem);
                 
-                if (verifyError) {
-                    console.error(`[Supabase Error] Verification fetch failed for "${cust.name}":`, verifyError);
-                    showToast(`Warning: Record saved, but Supabase verification read failed: ${verifyError.message}`, 'warning');
-                } else if (verifyData && verifyData.length > 0 && verifyData[0].id === cust.id) {
-                    console.log(`[Supabase] Verification succeeded! Record confirmed:`, verifyData[0]);
-                    showToast(`Customer "${cust.name}" successfully saved and verified in Supabase!`, 'success');
+                safeStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(state.customers));
+                if (db && !db.isSupabase) {
+                    await dbDeleteLocal(STORES.CUSTOMERS, oldId);
+                    await dbPutLocal(STORES.CUSTOMERS, savedItem);
+                }
+            } else {
+                const index = state.customers.findIndex(c => c.id === cust.id);
+                if (index >= 0) {
+                    state.customers[index] = cust;
                 } else {
-                    console.error(`[Supabase Error] Verification failed. Record "${cust.id}" not found on remote database!`);
-                    showToast(`Warning: Customer saved locally, but not found during remote Supabase verification check.`, 'warning');
+                    state.customers.push(cust);
+                }
+                safeStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(state.customers));
+                if (db && !db.isSupabase) {
+                    await dbPutLocal(STORES.CUSTOMERS, cust);
                 }
             }
         } else {
-            console.log(`[Supabase] Client offline or disabled. Saved customer "${cust.name}" locally.`);
+            console.log(`[Supabase] Client offline or disabled. Saving customer "${cust.name}" locally.`);
+            const index = state.customers.findIndex(c => c.id === cust.id);
+            if (index >= 0) {
+                state.customers[index] = cust;
+            } else {
+                state.customers.push(cust);
+            }
+            safeStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(state.customers));
+            if (db) {
+                await dbPutLocal(STORES.CUSTOMERS, cust);
+            }
             showToast(`Customer "${cust.name}" saved to local database (Supabase Offline).`, 'info');
         }
     } catch (e) {
@@ -1291,6 +1252,7 @@ async function saveCustomer(cust) {
         showToast(`Error saving customer: ${e.message || e}`, 'danger');
     }
 }
+
 
 async function removeCustomer(custId) {
     if (state.currentUser.role !== 'Admin') {
@@ -2684,6 +2646,7 @@ async function handleCustomerFormSubmit(e) {
             return;
         }
 
+        let targetId = custId;
         if (custId) {
             // Update Customer
             const cust = state.customers.find(c => c.id === custId);
@@ -2698,6 +2661,7 @@ async function handleCustomerFormSubmit(e) {
             await saveCustomer(cust);
             await logActivity(`Edited customer record for ${name} (Mobile: ${mobile})`);
             showToast('Customer profile updated successfully!', 'success');
+            targetId = cust.id;
         } else {
             // Create Customer
             const newCust = {
@@ -2718,6 +2682,7 @@ async function handleCustomerFormSubmit(e) {
             await saveCustomer(newCust);
             await logActivity(`Created customer record for ${name} (Mobile: ${mobile})`);
             showToast(`Patient ${name} registered successfully!`, 'success');
+            targetId = newCust.id;
         }
 
         console.log("Database write successful. Refreshing UI lists...");
@@ -2727,7 +2692,8 @@ async function handleCustomerFormSubmit(e) {
         const activeModuleId = document.querySelector('.app-module.active').id;
         if (activeModuleId === 'dashboardModule') renderDashboard();
         else if (activeModuleId === 'customersModule') renderCustomersList();
-        else if (activeModuleId === 'customerProfileModule') renderCustomerProfile(state.currentCustomerId || custId);
+        else if (activeModuleId === 'customerProfileModule') renderCustomerProfile(targetId);
+
     } catch (err) {
         console.error("Critical error in customer form submit:", err);
         showToast("Failed to save patient profile database record.", "danger");
