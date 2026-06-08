@@ -3934,10 +3934,10 @@ async function handleLoginFormSubmit(e) {
     }
 
     // 2. Check if role matches
-    /*
-if (user.role !== role) {
+    if (user.role !== role) {
     showLoginMessage("Incorrect role selected for this account.", false);
     return;
+    }
 }
 */
     }
