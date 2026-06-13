@@ -1617,6 +1617,33 @@ async function savePrescription(rx) {
     }
 }
 
+async function deletePrescription(rxId) {
+    if (state.currentUser.role !== 'Admin') {
+        showToast('Permission denied. Admin accounts required to delete prescriptions.', 'danger');
+        return;
+    }
+    const rx = state.prescriptions.find(p => p.id === rxId);
+    if (!rx) return;
+
+    state.prescriptions = state.prescriptions.filter(p => p.id !== rxId);
+    try {
+        safeStorage.setItem(STORAGE_KEYS.PRESCRIPTIONS, JSON.stringify(state.prescriptions));
+        if (db) {
+            await dbDelete(STORES.PRESCRIPTIONS, rxId);
+        }
+        showToast('Prescription deleted successfully.', 'success');
+        closeModal('viewPrescriptionModal');
+        renderPrescriptionsModule();
+        renderDashboard();
+        if (state.currentCustomerId) {
+            renderCustomerProfile(state.currentCustomerId);
+        }
+    } catch (err) {
+        console.error('Error deleting prescription:', err);
+        showToast('Failed to delete prescription.', 'danger');
+    }
+}
+
 async function savePurchase(pur) {
     state.purchases.push(pur);
     try {
@@ -2457,6 +2484,17 @@ function triggerRxFullViewModal(rx) {
             safeBind(thumb, 'click', () => zoomImage(imgSrc));
             gallery.appendChild(thumb);
         });
+    }
+
+    const deleteBtn = document.getElementById('viewRxDeleteBtn');
+    if (deleteBtn) {
+        const isAdmin = state.currentUser && state.currentUser.role === 'Admin';
+        const isRealRx = rx && rx.id && state.prescriptions.some(p => p.id === rx.id);
+        if (isAdmin && isRealRx) {
+            deleteBtn.style.display = 'inline-flex';
+        } else {
+            deleteBtn.style.display = 'none';
+        }
     }
 
     openModal('viewPrescriptionModal');
@@ -3492,35 +3530,8 @@ function handlePrescriptionFiles(files) {
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const maxDimension = 600; 
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > maxDimension) {
-                        height = Math.round((height * maxDimension) / width);
-                        width = maxDimension;
-                    }
-                } else {
-                    if (height > maxDimension) {
-                        width = Math.round((width * maxDimension) / height);
-                        height = maxDimension;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
-                currentPrescriptionImages.push(compressedBase64);
-                renderPrescriptionUploadThumbnails();
-            };
-            img.src = e.target.result;
+            currentPrescriptionImages.push(e.target.result);
+            renderPrescriptionUploadThumbnails();
         };
         reader.readAsDataURL(file);
     }
@@ -3570,6 +3581,15 @@ function zoomImage(imgSrc) {
     const img = document.getElementById('zoomedImage');
     if (modal && img) {
         img.src = imgSrc;
+        const downloadBtn = document.getElementById('zoomDownloadBtn');
+        if (downloadBtn) {
+            downloadBtn.href = imgSrc;
+            if (activeViewingRx && activeViewingRx.doctorName) {
+                downloadBtn.download = `Prescription_${activeViewingRx.doctorName.replace(/\s+/g, '_')}_${activeViewingRx.rxDate || 'image'}.png`;
+            } else {
+                downloadBtn.download = `Prescription_Full_Res.png`;
+            }
+        }
         openModal('zoomImageModal');
     }
 }
@@ -4451,6 +4471,14 @@ function setupEvents() {
 
     // PDF compilation download binding
     safeBind('viewRxDownloadPdfBtn', 'click', downloadRxPdf);
+
+    // Prescription delete option binding
+    safeBind('viewRxDeleteBtn', 'click', async () => {
+        if (!activeViewingRx || !activeViewingRx.id) return;
+        if (confirm('Are you sure you want to delete this prescription?')) {
+            await deletePrescription(activeViewingRx.id);
+        }
+    });
 
     // Delegate WhatsApp Reminder button clicks
     safeBind(document, 'click', (e) => {
