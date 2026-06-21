@@ -3482,10 +3482,41 @@ function setupPrescriptionImageUpload() {
     if (!zone || !input || !previewContainer) return;
 
     safeBind(zone, 'click', (e) => {
-        if (e.target.closest('.thumbnail-preview-item') || e.target.closest('.thumbnail-delete-btn')) {
+        if (e.target.closest('.thumbnail-preview-item') || e.target.closest('.thumbnail-delete-btn') || e.target.closest('#rxCameraButton')) {
             return;
         }
         input.click();
+    });
+
+    safeBind('rxCameraButton', 'click', (e) => {
+        e.stopPropagation();
+        startCameraStream();
+    });
+
+    safeBind('captureFrameBtn', 'click', () => {
+        const video = document.getElementById('cameraVideo');
+        if (video && video.videoWidth > 0) {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const capturedDataUrl = canvas.toDataURL('image/png');
+            const approxSize = Math.round((capturedDataUrl.length - 22) * 3 / 4);
+            
+            console.log(`Original file size: ${approxSize} bytes`);
+            console.log(`Original image dimensions: ${canvas.width}x${canvas.height}`);
+            console.log(`Saved image dimensions: ${canvas.width}x${canvas.height}`);
+            
+            currentPrescriptionImages.push(capturedDataUrl);
+            renderPrescriptionUploadThumbnails();
+            
+            stopCameraStream();
+            closeModal('cameraModal');
+        } else {
+            showToast('Video stream not initialized yet.', 'warning');
+        }
     });
 
     safeBind(zone, 'dragover', (e) => {
@@ -3530,8 +3561,16 @@ function handlePrescriptionFiles(files) {
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            currentPrescriptionImages.push(e.target.result);
-            renderPrescriptionUploadThumbnails();
+            const img = new Image();
+            img.onload = function() {
+                console.log(`Original file size: ${file.size} bytes`);
+                console.log(`Original image dimensions: ${img.width}x${img.height}`);
+                console.log(`Saved image dimensions: ${img.width}x${img.height}`);
+                
+                currentPrescriptionImages.push(e.target.result);
+                renderPrescriptionUploadThumbnails();
+            };
+            img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
@@ -4283,10 +4322,48 @@ function openModal(modalId) {
     }
 }
 
+let cameraStream = null;
+
+async function startCameraStream() {
+    try {
+        const constraints = {
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 3840 },
+                height: { ideal: 2160 }
+            },
+            audio: false
+        };
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const video = document.getElementById('cameraVideo');
+        if (video) {
+            video.srcObject = cameraStream;
+            openModal('cameraModal');
+        }
+    } catch (err) {
+        console.error('Camera access failed:', err);
+        showToast('Camera access denied or unavailable. Fallback to file picker.', 'warning');
+        const fileInput = document.getElementById('rxImageFile');
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+}
+
+function stopCameraStream() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+}
+
 function closeModal(modalId) {
     const overlay = document.getElementById(modalId);
     if (overlay) {
         overlay.classList.remove('active');
+        if (modalId === 'cameraModal') {
+            stopCameraStream();
+        }
     }
 }
 
